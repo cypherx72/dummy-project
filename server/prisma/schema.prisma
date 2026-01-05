@@ -1,0 +1,232 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+model Account {
+   id                 String  @id @default(cuid())
+   userId             String  @map("user_id")
+   type               String
+   provider           String
+   providerAccountId  String  @map("provider_account_id")
+   refresh_token      String? @db.Text
+   access_token       String? @db.Text
+   expires_at         Int?
+   token_type         String?
+   scope              String?
+   id_token           String? @db.Text
+   session_state      String?
+
+   user User @relation(fields: [userId], references: [id], onDelete: Cascade)    
+
+   @@unique([provider, providerAccountId])
+   @@map("accounts")
+ }
+
+
+ model Session {
+   id           String   @id @default(cuid())
+   sessionToken String   @unique @map("session_token")
+   userId       String   @map("user_id") @unique
+   expires      DateTime
+   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+   @@map("sessions")
+ }
+
+ model User {
+   id            String    @id @default(cuid())
+   name          String?
+   email         String?   @unique
+   emailVerified DateTime? @map("email_verified")
+   contactNumber String?   @map("contact_number") @unique
+   registrationId  String?   @map("registration_id") @unique
+   image         String?
+   role         userRole    @default(student)
+   accounts      Account[]
+   sessions      Session[]
+   otp         Otp?
+  messages     Message[]
+  chatMembers  ChatMember[]
+
+   @@map("users")
+ }
+
+ model Otp {
+   id String @id @default(cuid())
+   userId       String  @unique @map("user_id")
+   code         String?
+   terminateOtp Int     @default(0) @map("terminate_otp")
+   expiresAt    DateTime @map("expires_at")
+   createdAt    DateTime @default(now()) @map("created_at")
+   updatedAt    DateTime @updatedAt @map("updated_at")
+   user User @relation(fields: [userId], references: [id])
+
+   @@map("otps")
+ }
+
+
+model Department {
+   id        String   @id @default(cuid())
+   name      String   @unique
+   createdAt DateTime @default(now()) @map("created_at")
+   updatedAt DateTime @updatedAt @map("updated_at")
+    courses   Course[]
+   @@map("departments")
+ }
+
+model Course { 
+  id        String   @id @default(cuid())
+  departmentId String @map("department_id")
+  name      String   @unique
+  code      String   @unique
+  teachersIds String[] @map("teachers_ids")
+  studentsIds String[] @map("students_ids")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  courseChatId Chat? @relation(fields: [code], references: [id])
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  @@map("courses")
+}
+
+ model Chat {
+
+   id          String    @id @default(cuid())
+   type        chatType 
+   createdAt   DateTime  @default(now()) @map("created_at")
+   updatedAt   DateTime  @updatedAt @map("updated_at")
+   messages    Message[]
+  chatMembers ChatMember[]
+  media Media[]
+  links Link[]
+  course Course?
+
+
+   @@map("chats")
+ }
+
+/* todo: model the threaded request 
+model ThreadedRequest { 
+  id String @id @default(cuid())
+  courseId String @map("course_id")
+  requestedBy String @map("requested_by")
+  title String 
+  status threadStatus
+  reviewedBy String @map("reviewed_by")
+  createdAt DateTime @default(now())
+}
+*/
+
+
+ model Message {
+   id        String   @id @default(cuid())
+   chatId    String   @map("chat_id")
+   senderId  String   @map("sender_id")
+   type      String   @default("text") 
+   content   String
+   createdAt DateTime @default(now()) @map("created_at")
+   replyToId String?
+replyTo Message? @relation("MessageReplies", fields: [replyToId], references: [id])
+replies Message[] @relation("MessageReplies")
+
+   chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+   sender User @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+   @@map("messages")
+ }
+
+
+model ChatMember { 
+  id String @id @default(cuid())
+  chatId String @map("chat_id") 
+  userId String @map("user_id") 
+  role userRole 
+  isMuted Boolean @default(false) @map("is_muted")
+
+  joinedAt DateTime @default(now()) @map("joined_at")
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("chatMembers")
+}
+
+model Link { 
+  id String @id @default(cuid())
+courseId String @map("course_id")
+chatId String @map("chat_id") @unique
+associate linkAssociate 
+createdBy String @map("created_by") // relate to teacher who created it
+startsAt DateTime? @map("starts_at")
+endsAt DateTime? @map("ends_at")
+createdAt DateTime @default(now()) @map("created_at")
+chat Chat @relation(fields: [chatId], references: [id])
+
+  @@map("links")
+}
+
+model Media { 
+  id String @id @default(cuid())
+  created_at   DateTime   @default(now())
+  cloudinary_url String
+  chatId String @map("chat_id") @unique
+  size String 
+  name String 
+  file_extension String
+  resource_type String
+  public_id String  
+  status fileStatus @default(pending)
+  associate fileAssociate 
+  chat Chat @relation(fields: [chatId], references: [id])
+  
+  @@map("files")
+}
+
+
+// Table Enums //
+
+enum userRole { 
+  student
+  staffMember
+}
+
+ enum fileStatus {
+  pending
+  completed
+  cancelled
+}
+
+enum fileAssociate { 
+  task
+  chat 
+  threaded
+}
+
+enum linkAssociate { 
+  zoomLink 
+  other
+}
+
+enum threadStatus { 
+  pending 
+  rejected
+  approved
+}
+
+enum chatType { 
+  course 
+  thread 
+  dm
+}
+
+// todo: fiex relationship between user and chatMember to 1 to 1
