@@ -1,39 +1,24 @@
 //use memo to optimize re-rendering if needed in future
 "use client";
-import { toast } from "sonner";
-
 type DateSeparatorProps = {
-  currentDate: number;
-  previousDate: number | null;
+  date: string;
 };
 
-export const DateSeparator = ({
-  currentDate,
-  previousDate,
-}: DateSeparatorProps) => {
-  if (!previousDate) {
-    return <div className="top-0 sticky flex justify-center mb-2 w-full"></div>;
-  }
-
-  const currDate = new Date(currentDate);
-  const prevDate = new Date(previousDate);
-
-  if (
-    currDate.getDate() !== prevDate.getDate() ||
-    currDate.getMonth() !== prevDate.getMonth() ||
-    currDate.getFullYear() !== prevDate.getFullYear()
-  ) {
-    return (
-      <div className="flex justify-center px-2 w-full">
-        <span className="bg-amber-300 p-0.5 rounded-sm font-bold text-black text-xs tracking-wide">
-          {formatDate(currentDate)}
-        </span>
-      </div>
-    );
-  }
+const getParsedDate = (dateString: string) => {
+  return Date.parse(dateString);
 };
 
-// date formater function
+export const DateSeparator = ({ date }: DateSeparatorProps) => {
+  const parsedDate = getParsedDate(date);
+
+  return (
+    <div className="top-3 z-40 sticky flex flex-row justify-center items-center p-2 rounded-sm w-full font-bold text-amber-500/70 text-xs">
+      <span className="bg-white/70 px-1 py-0.5 rounded-sm w-auto font-bold text-black text-xs text-nowrap tracking-wide">
+        {formatDate(parsedDate)}
+      </span>
+    </div>
+  );
+};
 
 const formatDate = (timestamp: number): string => {
   const date = new Date(timestamp);
@@ -52,9 +37,14 @@ const formatDate = (timestamp: number): string => {
     "November",
     "December",
   ];
+
   const year = date.getFullYear();
   const month = months[date.getMonth()];
   const day = date.getDate();
 
-  return `${month} ${day}, ${year}`;
+  if (day.toString().length === 1) {
+    return `0${day} ${month} ${year}`;
+  }
+
+  return `${day} ${month} ${year}`;
 };

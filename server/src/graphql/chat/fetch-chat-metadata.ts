@@ -11,12 +11,11 @@ type fetchChatMetadata = {
 export async function FetchChatMetadata(
   _: any,
   { input }: fetchChatMetadata,
-  context: contextType
+  context: contextType,
 ) {
   const { prisma, req } = context;
 
-  // validate token in the req object
-  const userId = input.userId;
+  console.log("running the query");
 
   try {
     const user = await prisma.user.findUnique({
@@ -26,9 +25,26 @@ export async function FetchChatMetadata(
           include: {
             chat: {
               include: {
+                course: {
+                  select: {
+                    name: true,
+                  },
+                },
                 messages: {
                   take: 30,
                   orderBy: { createdAt: "asc" },
+                  include: {
+                    sender: {
+                      select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        image: true,
+                      },
+                    },
+                    media: true,
+                    reactions: true,
+                  },
                 },
                 chatMembers: {
                   include: {
@@ -37,6 +53,7 @@ export async function FetchChatMetadata(
                         id: true,
                         email: true,
                         name: true,
+                        image: true,
                       },
                     },
                   },
@@ -51,6 +68,7 @@ export async function FetchChatMetadata(
     // 🔴 IMPORTANT: never return null
     const chats = user?.chatMembers?.map((cm) => cm.chat) ?? [];
 
+    console.log("chats: ", chats[0].messages);
     return {
       chats,
     };

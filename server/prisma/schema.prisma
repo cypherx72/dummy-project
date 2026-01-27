@@ -59,6 +59,7 @@ model Account {
    otp         Otp?
   messages     Message[]
   chatMembers  ChatMember[]
+   
 
    @@map("users")
  }
@@ -85,36 +86,41 @@ model Department {
     courses   Course[]
    @@map("departments")
  }
-
 model Course { 
-  id        String   @id @default(cuid())
-  departmentId String @map("department_id")
-  name      String   @unique
-  code      String   @unique
-  teachersIds String[] @map("teachers_ids")
-  studentsIds String[] @map("students_ids")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  courseChatId Chat? @relation(fields: [code], references: [id])
-  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  departmentId  String   @map("department_id")
+  name          String   @unique
+  code          String   @unique
+
+  teachersIds   String[] @map("teachers_ids")
+  studentsIds   String[] @map("students_ids")
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  chat          Chat?
+
+  department    Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
   @@map("courses")
 }
+model Chat {
+  id        String   @id @default(cuid())
+  type      chatType
+  courseId  String?  @unique @map("course_id")
 
- model Chat {
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-   id          String    @id @default(cuid())
-   type        chatType 
-   createdAt   DateTime  @default(now()) @map("created_at")
-   updatedAt   DateTime  @updatedAt @map("updated_at")
-   messages    Message[]
+  course    Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  messages  Message[]
   chatMembers ChatMember[]
-  media Media[]
-  links Link[]
-  course Course?
+  links     Link[]
 
+  @@map("chats")
+}
 
-   @@map("chats")
- }
 
 /* todo: model the threaded request 
 model ThreadedRequest { 
@@ -128,23 +134,37 @@ model ThreadedRequest {
 }
 */
 
+enum MediaType {
+  image 
+  video
+  pdf
+  text
+}
 
- model Message {
-   id        String   @id @default(cuid())
-   chatId    String   @map("chat_id")
-   senderId  String   @map("sender_id")
-   type      String   @default("text") 
-   content   String
-   createdAt DateTime @default(now()) @map("created_at")
-   replyToId String?
-replyTo Message? @relation("MessageReplies", fields: [replyToId], references: [id])
-replies Message[] @relation("MessageReplies")
+model Message {
+  id           String     @id @default(cuid())
+  senderId     String     @map("sender_id")
+  content      String?
+  createdAt    DateTime   @default(now()) @map("created_at")
+  replyToId    String?
 
-   chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
-   sender User @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  deliveredAt  DateTime?  @map("delivered_at")
+  readAt       DateTime?  @map("read_at")
 
-   @@map("messages")
- }
+  chatId String @map("chat_id")
+  chat Chat @relation(fields: [chatId], references: [id])
+  mediaId      String?    @unique @map("media_id")
+  media        Media?     @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  replyTo      Message?   @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies      Message[]  @relation("MessageReplies")
+
+  sender       User       @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  reactions    Reaction[]
+  @@map("messages")
+}
+
 
 
 model ChatMember { 
@@ -155,9 +175,12 @@ model ChatMember {
   isMuted Boolean @default(false) @map("is_muted")
 
   joinedAt DateTime @default(now()) @map("joined_at")
-  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  unreadMessageCount Int @default(0) @map("unread_message_count")
+    chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ reactions    Reaction[]
 
+ @@unique([chatId, userId])
   @@map("chatMembers")
 }
 
@@ -175,22 +198,37 @@ chat Chat @relation(fields: [chatId], references: [id])
   @@map("links")
 }
 
-model Media { 
-  id String @id @default(cuid())
-  created_at   DateTime   @default(now())
-  cloudinary_url String
-  chatId String @map("chat_id") @unique
-  size String 
-  name String 
-  file_extension String
-  resource_type String
-  public_id String  
-  status fileStatus @default(pending)
-  associate fileAssociate 
-  chat Chat @relation(fields: [chatId], references: [id])
-  
+model Reaction {
+  id        String   @id @default(cuid())
+  messageId String   @map("message_id") 
+  chatMemberId    String   @map("chat_member_id") 
+  emoji     String   
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  chatMember      ChatMember     @relation(fields: [chatMemberId], references: [id], onDelete: Cascade)
+
+  @@map("reactions")
+}
+
+model Media {
+  id              String      @id @default(cuid())
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  cloudinary_url  String
+  size            String
+  name            String
+  file_extension  String
+  resource_type   String
+  public_id       String
+  status          fileStatus  @default(pending)
+  associate       fileAssociate
+  message Message?
+
   @@map("files")
 }
+
 
 
 // Table Enums //
@@ -228,5 +266,3 @@ enum chatType {
   thread 
   dm
 }
-
-// todo: fiex relationship between user and chatMember to 1 to 1

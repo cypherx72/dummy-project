@@ -1,74 +1,277 @@
 // Context for managing chat-related state and actions in the dashboard
 "use client";
-
-import { createContext, useState, useEffect, useContext } from "react";
-import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
+import {
+  MARK_CHAT_AS_READ,
+  SEND_MESSAGE,
+  SEND_REACTION,
+  EDIT_MESSAGE,
+  FETCH_CHAT_DATA,
+} from "./query-mutation";
+import { EditMessageArgs, SendMessageArgs, SendReactionArgs } from "../types";
+import {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  useMemo,
+  useRef,
+  RefObject,
+} from "react";
 import { connectSocket } from "@/lib/socketIO";
 import { Socket } from "socket.io-client";
-import { gql } from "@apollo/client";
-import { useQuery } from "@apollo/client/react";
+import { useMutation, useQuery } from "@apollo/client/react";
+import {
+  ChatSummary,
+  Message,
+  ChatMetadata,
+  ChatBootstrapPayloadType,
+  Reaction,
+  typingUserType,
+} from "../types";
 
-const FETCH_META_DATA = gql`
-  query FetchChatMetadata($userId: String!) {
-    chatMetadata: FetchChatMetadata(input: { userId: $userId }) {
-      chats {
-        id
-        type
-        title
-        courseId
-        createdAt
-        updatedAt
+const ChatUIContext = createContext<ChatUIContextType | undefined>(undefined);
+const userId = "1";
 
-        messages {
-          id
-          chatId
-          senderId
-          type
-          content
-          createdAt
-          replyToId
-        }
+type ChatUIContextType = {
+  chatSummaries: ChatSummary[];
+  messagesByChatId: Record<string, Message[]>;
+  chatMetadataByChatId: Record<string, ChatMetadata>;
+  activeChatId: string | null;
+  setActiveChatId: (chatId: string | null) => void;
+  chatBootstrapPayloadLoading: boolean;
+  handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  sendMessage: ({ chatId, content, media, replyToId }: SendMessageArgs) => void;
+  editMessage: ({ chatId, content, messageId }: EditMessageArgs) => void;
 
-        chatMembers {
-          id
-          chatId
-          userId
-          role
-          isMuted
-          joinedAt
+  isTypingRef: RefObject<boolean>;
 
-          user {
-            id
-            email
-            name
-          }
-        }
-      }
-    }
-  }
-`;
-
-const ChatUIContext = createContext(null);
+  openRightChatAside: boolean;
+  contextMenuMessageId: Message | null;
+  openEditMessage: boolean;
+  setOpenEditMessage: (prev: boolean) => void;
+  setContextMenuMessageId: (prev: Message | null) => void;
+  setOpenRightChatAside: (prev: boolean) => void;
+  typingUser: Record<string, typingUserType[]>;
+  sendReaction: ({ chatId, messageId, emoji }: SendReactionArgs) => void;
+};
 
 export default function ChatProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { data: session, status } = useSession();
+  const [typingUser, setTypingUser] = useState<
+    Record<string, typingUserType[]>
+  >({});
+  const [message, setMessage] = useState("");
+  const [messagesByChatId, setMessagesByChatId] = useState<
+    Record<string, Message[]>
+  >({});
+  const [contextMenuMessageId, setContextMenuMessageId] =
+    useState<Message | null>(null);
+  const [openRightChatAside, setOpenRightChatAside] = useState<boolean>(false);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [chatSummaries, setChatSummaries] = useState<ChatSummary[]>([]);
+  const [chatMetadataByChatId, setChatMetadataByChatId] = useState<
+    Record<string, ChatMetadata>
+  >({});
+  const isTypingRef = useRef(false);
+  const [openEditMessage, setOpenEditMessage] = useState<boolean>(false);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [sendMessageMutation, {}] = useMutation(SEND_MESSAGE);
+
+  const [editMessageMutation, {}] = useMutation(EDIT_MESSAGE);
+
+  const [markChatAsReadMutation, {}] = useMutation(MARK_CHAT_AS_READ);
+
+  const [sendReactionMutation, {}] = useMutation(SEND_REACTION);
+
+  const debounce = <T extends (...args: any[]) => void>(
+    fn: T,
+    delay: number,
+  ) => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    return (...args: Parameters<T>) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => fn(...args), delay);
+    };
+  };
+
+  const debouncedStopTyping = useMemo(
+    () =>
+      debounce((chatId: string, username: string, avatarUrl: string) => {
+        if (!socket) return;
+
+        socket.emit("stopTyping", {
+          chatId,
+          username,
+          avatarUrl,
+        });
+
+        isTypingRef.current = false;
+      }, 10000),
+    [socket],
+  );
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (!socket || !activeChatId) return;
+
+    const value = e.target.value;
+    if (!value.trim()) return;
+
+    const username = "tavonga";
+    const avatarUrl = "";
+
+    if (!isTypingRef.current) {
+      socket.emit("typing", {
+        chatId: activeChatId,
+        username,
+        avatarUrl,
+      });
+
+      isTypingRef.current = true;
+    }
+
+    debouncedStopTyping(activeChatId, username, avatarUrl);
+  };
 
   useEffect(() => {
-    console.log("SESSION STATUS:", status);
-    console.log("SESSION DATA:", session);
-    if (status === "unauthenticated") {
-      redirect("/auth/login");
-    }
-  }, [status, session]);
+    return () => {
+      if (isTypingRef.current && socket && activeChatId) {
+        socket.emit("stopTyping", {
+          chatId: activeChatId,
+          username: "tavonga",
+          avatarUrl: "",
+        });
+      }
+    };
+  }, [activeChatId, socket]);
 
-  const [chatMetadata, setChatMetadata] = useState();
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [loadingChatMetadata, setLoadingChatMetadata] = useState(false);
+  useEffect(() => {
+    setContextMenuMessageId(null);
+  }, [activeChatId]);
+
+  useEffect(() => {
+    if (!activeChatId) return;
+
+    markChatAsReadMutation({
+      variables: {
+        input: { chatId: activeChatId },
+      },
+      onCompleted: (res) => {
+        console.log(res);
+        const updated = res.markChatAsRead;
+
+        setChatSummaries((prev) =>
+          prev.map((chat) =>
+            chat.chatId === updated.chatId
+              ? {
+                  ...chat,
+                  chatMemberId: updated.id,
+                  unreadMessageCount: updated.unreadMessageCount,
+                }
+              : chat,
+          ),
+        );
+      },
+    });
+  }, [activeChatId, markChatAsReadMutation]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket?.on("typing", (data: typingUserType & { chatId: string }) => {
+      setTypingUser((prev) => {
+        const existing = prev[data.chatId] ?? [];
+
+        return {
+          ...prev,
+          [data.chatId]: [...existing, data],
+        };
+      });
+    });
+
+    socket?.on("stopTyping", (data) => {
+      console.log("removing tpingusers");
+      setTypingUser((prev) => {
+        const existing =
+          prev[data.chatId].filter((user) => user.chatId !== data.chatId) ?? [];
+
+        return {
+          ...prev,
+          [data.chatId]: [...existing],
+        };
+      });
+    });
+
+    socket.on("reaction:new", handleNewReaction);
+
+    socket.on("message:new", handleNewMessage);
+
+    return () => {
+      socket.off("typing");
+      socket.off("stopped-typing");
+      socket.off("message:new", handleNewMessage);
+      socket.off("reaction:new", handleNewReaction);
+    };
+  }, [socket]);
+
+  const handleNewMessage = (msg: Message) => {
+    // Update messages
+
+    setMessagesByChatId((prev) => ({
+      ...prev,
+      [msg.chatId]: [...(prev[msg.chatId] || []), msg],
+    }));
+
+    // Update sidebar summary
+    setChatSummaries((prev) =>
+      prev.map((chat) =>
+        chat.chatId === msg.chatId
+          ? {
+              ...chat,
+              lastMessage: msg.content,
+              lastMessageCreatedAt: msg.createdAt,
+              unreadMessageCount: chat.unreadMessageCount + 1,
+            }
+          : chat,
+      ),
+    );
+  };
+
+  const handleNewReaction = (reaction: Reaction) => {
+    setMessagesByChatId((prev) => {
+      return {
+        [reaction.chatId]: [...prev[reaction.chatId]].map((msg) => {
+          if (msg.id === reaction.messageId) {
+            return {
+              ...msg,
+              reactions: [...(msg.reactions || []), reaction],
+            };
+          }
+          return msg;
+        }),
+      };
+    });
+  };
+
+  // const handleNewMediaMessage = (msg: Message) => {
+  //   handleNewMessage(msg);
+
+  //   setChatMetadataByChatId((prev) => {
+  //     const meta = prev[msg.chatId];
+  //     if (!meta) return prev;
+
+  //     return {
+  //       ...prev,
+  //       [msg.chatId]: {
+  //         ...meta,
+  //         mediaCount: meta.mediaCount + 1,
+  //       },
+  //     };
+  //   });
+  // };
 
   useEffect(() => {
     const socket = connectSocket();
@@ -89,129 +292,164 @@ export default function ChatProvider({
     };
   }, []);
 
-  const userId = "1";
-
-  const {
-    loading: fetchingMetadata,
-    data,
-    error,
-  } = useQuery(FETCH_META_DATA, {
-    skip: !userId,
-    variables: { userId },
-  });
+  // see logs from server
   useEffect(() => {
-    console.log("loading:", fetchingMetadata);
-    console.log("error:", error);
-    console.log("data:", data);
-  }, [fetchingMetadata, error, data]);
+    console.log("messagesByChatId updated: ", messagesByChatId);
+    console.log("chatSummaries updated: ", chatSummaries);
+    console.log("chatMetadataByChatId updated: ", chatMetadataByChatId);
+  }, [messagesByChatId, chatSummaries, chatMetadataByChatId]);
 
-  // if (fetchingMetadata) setLoadingChatMetadata(true);
-
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleNewMessage = (msg: string) => {
-      console.log("📩 New message received:", msg);
-      //   setChatMetadata((prev) => [...prev, msg]);
-    };
-
-    socket.on("message:new", handleNewMessage);
-
-    return () => {
-      socket.off("message:new", handleNewMessage);
-    };
-  }, [socket]);
-
-  // todo: type of message must be either file, string or emoji
-  function sendMessage(message: string) {
-    if (!socket) return;
-
-    socket.emit("message:send", {
-      chatId: "1",
-      content: message,
-      type: "text",
+  const { loading: chatBootstrapPayloadLoading, data: chatBootstrapPayload } =
+    useQuery<ChatBootstrapPayloadType>(FETCH_CHAT_DATA, {
+      skip: !userId,
+      variables: { userId },
     });
+
+  useEffect(() => {
+    if (chatBootstrapPayload) {
+      // upon receiving chatBootstrapPayload, set chat summaries, metadata and messages
+      const chats = chatBootstrapPayload.chatContext.chats;
+      console.log(chats);
+
+      // setting chat summaries
+      setChatSummaries(
+        chats.map((chat) => ({
+          chatId: chat.id,
+          course: chat.course.name,
+          type: chat.type,
+          lastMessage:
+            chat.messages.length > 0
+              ? chat.messages[chat.messages.length - 1].content || ""
+              : "",
+          lastMessageCreatedAt:
+            chat.messages.length > 0
+              ? chat.messages[chat.messages.length - 1].createdAt
+              : chat.createdAt,
+          unreadMessageCount: 0, // initial unread count set to 0
+          chatName: "", // will be set later
+          avatarUrl: "", // will be set later
+        })),
+      );
+
+      // setting messages by chat id
+      setMessagesByChatId(
+        chats.reduce(
+          (acc, chat) => {
+            acc[chat.id] = chat.messages;
+            return acc;
+          },
+          {} as Record<string, Message[]>,
+        ),
+      );
+
+      // setting chat metadata by chat id
+      setChatMetadataByChatId(
+        chats.reduce(
+          (acc, chat) => {
+            const mediaItems = chat.messages
+              .map((msg) => msg.media)
+              .filter(
+                (media): media is NonNullable<typeof media> => media !== null,
+              );
+            acc[chat.id] = {
+              members: chat.chatMembers,
+              media: mediaItems,
+              mediaCount: mediaItems.length,
+              filesCount: mediaItems.filter((m) => m.resourceType === "file")
+                .length,
+              linksCount: 0, // to be implemented
+            };
+            return acc;
+          },
+          {} as Record<string, ChatMetadata>,
+        ),
+      );
+    }
+  }, [chatBootstrapPayload]);
+
+  function sendReaction({ chatId, emoji, messageId }: SendReactionArgs) {
+    if (!chatId || !emoji || !messageId) return;
+    console.log("from layout reactionsend: ", chatId, emoji, messageId);
+    sendReactionMutation({
+      variables: {
+        input: {
+          chatId,
+          emoji,
+          messageId,
+        },
+      },
+    });
+  }
+
+  function editMessage({ chatId, content, messageId }: EditMessageArgs) {
+    if ((!content && !chatId) || !socket || !chatId) return;
+
+    editMessageMutation({
+      variables: {
+        input: {
+          chatId,
+          content,
+          messageId,
+        },
+      },
+    });
+
+    setOpenEditMessage(false);
+    setContextMenuMessageId(null);
+  }
+
+  function sendMessage({ chatId, content, media, replyToId }: SendMessageArgs) {
+    if ((!content && !media) || !socket || !chatId) return;
+
+    sendMessageMutation({
+      variables: {
+        input: {
+          chatId,
+          content,
+          media,
+          replyToId,
+        },
+      },
+    });
+
+    setContextMenuMessageId(null);
   }
 
   // Attaching session to context value for access in child components
   return (
-    <ChatUIContext.Provider
+    <ChatUIContext
       value={{
-        chatMetadata,
-        setChatMetadata,
+        chatSummaries,
+        messagesByChatId,
+        setOpenRightChatAside,
+        openRightChatAside,
+        message,
+        chatMetadataByChatId,
+        activeChatId,
+        setActiveChatId,
+        handleInputChange,
+        editMessage,
+        chatBootstrapPayloadLoading,
+        setMessage,
+        sendReaction,
+        setContextMenuMessageId,
+        contextMenuMessageId,
         sendMessage,
-        loadingChatMetadata,
-        data,
+        openEditMessage,
+        setOpenEditMessage,
+        isTypingRef,
+        typingUser,
       }}
     >
       {children}
-    </ChatUIContext.Provider>
+    </ChatUIContext>
   );
 }
 
-export const useChatUI = () => useContext(ChatUIContext);
-
-/* 
-  logs after userMetadata:  
-
-  {
-  chatMembers: [
-    {
-      id: '1',
-      chatId: '1',
-      userId: '1',
-      role: 'student',
-      isMuted: false,
-      joinedAt: 2026-01-01T16:58:14.755Z,
-      chat: [Object]
-    }
-  ]
-}
-
-  userMetadata.chatMembers[0].chat
-
-  {
-  id: '1',
-  type: 'course',
-  title: 'data structures',
-  courseId: '1',
-  createdAt: 2026-01-01T16:57:08.533Z,
-  updatedAt: 2026-01-01T16:57:08.533Z,
-  messages: [
-    {
-      id: '1',
-      chatId: '1',
-      senderId: '1',
-      type: 'text',
-      content: 'hello everyone, tavonga here',
-      createdAt: 2026-01-01T16:57:44.774Z,
-      replyToId: null
-    }
-  ],
-  chatMembers: [
-    {
-      id: '1',
-      chatId: '1',
-      userId: '1',
-      role: 'student',
-      isMuted: false,
-      joinedAt: 2026-01-01T16:58:14.755Z,
-      user: [Object]
-    },
-    {
-      id: '2',
-      chatId: '1',
-      userId: '2',
-      role: 'student',
-      isMuted: false,
-      joinedAt: 2026-01-02T07:16:16.300Z,
-      user: [Object]
-    }
-  ]
-}
-
-userMetadata.chatMembers[0].chat.chatMembers[1].user
-
-{ id: '2', email: '31242198@vupune.ac.in', name: 'Blessed Mazambani' }
-
-*/
+export const useChatUI = () => {
+  const ctx = useContext(ChatUIContext);
+  if (!ctx) {
+    throw new Error("useChatUI must be used within ChatProvider");
+  }
+  return ctx;
+};

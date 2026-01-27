@@ -59,7 +59,7 @@ export function RegistrationSchema() {
   });
 }
 
-// shcema for file validation
+// shcema for media validation
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_MIME_TYPES = [
@@ -69,7 +69,7 @@ const ACCEPTED_MIME_TYPES = [
   "application/pdf",
 ];
 
-export const fileSchema = z
+export const MediaSchema = z
   .any()
   .refine(
     (f) => f instanceof File,

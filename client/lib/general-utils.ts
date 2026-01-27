@@ -45,3 +45,12 @@ export const formatDate = (date: string): string => {
 
   return `${month} ${day}, ${year} ${hours}:${minutes} ${ampm}`;
 };
+
+export const timeFormat = (dateString: string) => {
+  const parsedDate = Date.parse(dateString);
+  const date = new Date(parsedDate);
+  const hour = date.getHours();
+  const minutes = date.getMinutes();
+
+  return `${hour / 10 < 1 ? `0${hour}` : hour}:${minutes / 10 < 1 ? `0${minutes}` : minutes}`;
+};

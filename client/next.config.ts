@@ -7,6 +7,26 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "t3.ftcdn.net",
       },
+      {
+        protocol: "https",
+        hostname: "api.careers.fresenius.com",
+        pathname: "/images/**",
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "encrypted-tbn0.gstatic.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.nba.com",
+        pathname: "/**",
+      },
     ],
   },
 };

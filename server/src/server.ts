@@ -10,7 +10,12 @@ import { resolvers } from "./graphql/resolvers.js";
 import prisma from "./prisma.js";
 import { Server } from "socket.io";
 import cookie from "cookie";
-import jwt from "jsonwebtoken";
+import { v2 as cloudinary } from "cloudinary";
+
+// Configure cloudinary
+cloudinary.config({
+  secure: true,
+});
 
 // Required logic for integrating with Express
 const app = express();
@@ -31,7 +36,7 @@ const server = new ApolloServer({
 await server.start();
 
 // Set up Socket.io server
-const io = new Server(httpServer, {
+export const io = new Server(httpServer, {
   cors: {
     origin: "http://localhost:3000",
     methods: ["GET", "POST"],
@@ -63,8 +68,10 @@ app.use(
       req,
       res,
       prisma,
+      cloudinary,
+      io,
     }),
-  })
+  }),
 );
 
 // Listen for Socket.io events
@@ -117,42 +124,24 @@ io.on("connection", async (socket) => {
 
     console.log(
       `User ${user.id} joined chats:`,
-      chatMemberships.map((c) => c.chatId)
+      chatMemberships.map((c) => c.chatId),
     );
 
-    socket.on("message:send", async ({ chatId, content, type }) => {
-      const user = socket.user;
-      console.log("Received message from user:", user?.id);
+    socket.on("typing", ({ chatId, username, avatar }) => {
+      console.log(chatId, username, avatar);
+      socket.to(`chat:${chatId}`).emit("typing", { username, avatar, chatId }); //change this later to only emit to others and not the person causing the event
+    });
 
-      // 1️⃣ Permission check
-      const isMember = await prisma.chatMember.findFirst({
-        where: {
-          chatId,
-          userId: user.id,
-        },
-      });
+    socket.on("stopTyping", ({ chatId, username, avatar }) => {
+      socket
+        .to(`chat:${chatId}`)
+        .emit("stopTyping", { username, avatar, chatId });
+    });
 
-      if (!isMember) return;
-
-      console.log(isMember);
-
-      // 2️⃣ Save message
-      const message = await prisma.message.create({
-        data: {
-          chatId: "1",
-          senderId: user.id,
-          content,
-          type,
-        },
-      });
-
-      // 3️⃣ Emit to that chat ONLY
-      io.to(`chat:${chatId}`).emit("message:new", {
-        id: message.id,
-        chatId,
-        content,
-        senderId: user.id,
-        createdAt: message.createdAt,
+    socket.on("message:new", async ({ message }) => {
+      socket.emit("message:delivered", {
+        messageId: message.id,
+        chatId: message.chatId,
       });
     });
   } catch (err) {
@@ -164,6 +153,6 @@ io.on("connection", async (socket) => {
 // Modified server startup
 
 await new Promise<void>((resolve) =>
-  httpServer.listen({ port: 4000 }, resolve)
+  httpServer.listen({ port: 4000 }, resolve),
 );
 console.log(`🚀 Server ready at http://localhost:4000/`);
