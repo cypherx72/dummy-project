@@ -12,6 +12,7 @@ import { SendReaction } from "./chat/reactions.js";
 import { MarkChatAsRead } from "./chat/mark-chat-as-read.js";
 import { dateScalar } from "./custom-types.js";
 import { EditMessage } from "./chat/edit-message.js";
+import { CursorPagination } from "./chat/pagination.js";
 
 export const resolvers = {
   Date: dateScalar,
@@ -21,6 +22,7 @@ export const resolvers = {
     LogInViaProvider,
     Middleware,
     ForgotPassword,
+    CursorPagination,
     FetchChatMetadata,
   },
   Mutation: {

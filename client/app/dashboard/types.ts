@@ -1,3 +1,5 @@
+import { RefObject } from "react";
+
 export type ChatSummary = {
   chatId: string;
   chatName: string;
@@ -55,6 +57,7 @@ export type EditMessageArgs = {
 };
 
 export type Reaction = {
+  chatId: string;
   id: string;
   messageId: string;
   chatMemberId: string;
@@ -107,4 +110,49 @@ export type typingUserType = {
   chatId: string;
   username: string;
   avatarUrl: string;
+};
+
+export type MessageNotificationType = {
+  messageId: string;
+  unreadCount: number;
+};
+
+export type CursorPaginationType = {
+  activeChatId: string;
+  myCursor: string;
+};
+
+export type ChatUIContextType = {
+  chatSummaries: ChatSummary[];
+  messagesByChatId: Record<string, Message[]>;
+  messageNotification: Record<string, MessageNotificationType>;
+  chatMetadataByChatId: Record<string, ChatMetadata>;
+  activeChatId: string | null;
+  setActiveChatId: (chatId: string | null) => void;
+  chatBootstrapPayloadLoading: boolean;
+  handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  sendMessage: ({ chatId, content, media, replyToId }: SendMessageArgs) => void;
+  editMessage: ({ chatId, content, messageId }: EditMessageArgs) => void;
+  isTypingRef: RefObject<boolean>;
+  openRightChatAside: boolean;
+  contextMenuMessageId: Message | null;
+  fetchOlderMessages: ({
+    activeChatId,
+    myCursor,
+  }: CursorPaginationType) => void;
+  openEditMessage: boolean;
+  openDeleteDialog: boolean;
+  setOpenDeleteDialog: (prev: boolean) => void;
+  setMyCursorByChatId: React.Dispatch<
+    React.SetStateAction<Record<string, string>>
+  >;
+  myCursorByChatId: Record<string, string>;
+  setMessageNotification: React.Dispatch<
+    React.SetStateAction<Record<string, MessageNotificationType>>
+  >;
+  setOpenEditMessage: (prev: boolean) => void;
+  setContextMenuMessageId: (prev: Message | null) => void;
+  setOpenRightChatAside: (prev: boolean) => void;
+  typingUser: Record<string, typingUserType[]>;
+  sendReaction: ({ chatId, messageId, emoji }: SendReactionArgs) => void;
 };

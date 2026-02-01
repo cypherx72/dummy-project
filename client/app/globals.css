@@ -120,6 +120,18 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  @keyframes highlightFade {
+    0% {
+      background-color: rgba(253, 224, 71, 0.6);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+}
+
 .toast-container {
   color: white !important;
 }

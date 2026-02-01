@@ -106,3 +106,71 @@ export const MARK_CHAT_AS_READ = gql`
     }
   }
 `;
+
+export const CURSOR_PAGINATION = gql`
+  query CursorPagination($input: CursorPaginationInput!) {
+    cursorPaginationResponse: CursorPagination(input: $input) {
+      chats {
+        id
+        type
+        courseId
+        createdAt
+        updatedAt
+
+        course {
+          name
+        }
+
+        messages {
+          id
+          chatId
+          content
+          createdAt
+          replyToId
+          deliveredAt
+          readAt
+
+          reactions {
+            id
+            messageId
+            chatMemberId
+            createdAt
+            emoji
+          }
+
+          sender {
+            id
+            name
+            email
+            image
+          }
+
+          media {
+            createdAt
+            cloudinary_url
+            resource_type
+            size
+            name
+            associate
+          }
+        }
+
+        chatMembers {
+          id
+          chatId
+          userId
+          role
+          isMuted
+          joinedAt
+
+          user {
+            id
+            email
+            name
+            image
+          }
+        }
+      }
+    }
+  }
+`;

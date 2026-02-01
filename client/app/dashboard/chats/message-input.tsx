@@ -40,7 +40,7 @@ export const MessageInput = () => {
     handleSubmit,
     reset,
     getValues,
-    formState: { isLoading },
+
     setValue,
   } = useForm({
     defaultValues: {

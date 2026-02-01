@@ -322,7 +322,9 @@ export default function LeftChatAside() {
           chatSummaries.map((chat) => {
             return (
               <Card
-                onClick={() => setActiveChatId(chat.chatId)} // here it must send the section to activate on the center tab
+                onClick={() => {
+                  setActiveChatId(chat.chatId);
+                }} // here it must send the section to activate on the center tab
                 className={`flex flex-row justify-center items-center gap-0 p-2 border-none w-full ${activeChatId === chat.chatId ? "bg-neutral-700" : ""}`}
                 key={chat.chatId}
               >

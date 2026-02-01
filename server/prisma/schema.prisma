@@ -156,11 +156,14 @@ model Message {
   mediaId      String?    @unique @map("media_id")
   media        Media?     @relation(fields: [mediaId], references: [id], onDelete: Cascade)
 
-  replyTo      Message?   @relation("MessageReplies", fields: [replyToId], references: [id])
-  replies      Message[]  @relation("MessageReplies")
+  replyTo      Message?   @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: Cascade) 
+  replies      Message[]  @relation("MessageReplies") 
 
   sender       User       @relation(fields: [senderId], references: [id], onDelete: Cascade)
-
+  // add a edited msg field of type boolean 
+  // add a star field also... 
+  // learn cascading... 
+  
   reactions    Reaction[]
   @@map("messages")
 }

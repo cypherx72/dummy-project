@@ -5,7 +5,7 @@ import { useChatUI } from "@/app/dashboard/chats/layout";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { timeFormat } from "@/lib/general-utils";
 import { DateSeparator } from "@/components/chat/date-seperator";
-import { Fragment } from "react";
+import { Fragment, useRef } from "react";
 import { GoDotFill } from "react-icons/go";
 import { PiPhoneCallBold } from "react-icons/pi";
 import { FaPlus } from "react-icons/fa";
@@ -26,8 +26,6 @@ import {
   Card,
   CardAction,
   CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -35,7 +33,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Image from "next/image";
@@ -64,8 +61,14 @@ import {
 import Link from "next/link";
 import { MdSearch } from "react-icons/md";
 import { ThreeDots } from "./three-dots";
-import { Message } from "../types";
 import { ContextMenuSeparator } from "@radix-ui/react-context-menu";
+import { useForm } from "react-hook-form";
+import { useEffect } from "react";
+import { DeleteDialog } from "./context-menu/dialogs";
+import { cn } from "@/lib/utils";
+import { FaAngleDoubleDown } from "react-icons/fa";
+
+const SCROLL_THRESHOLD = 120;
 
 export default function ChatMain() {
   const {
@@ -73,16 +76,101 @@ export default function ChatMain() {
     activeChatId,
     sendReaction,
     typingUser,
+    fetchOlderMessages,
     setOpenRightChatAside,
     openEditMessage,
+    myCursorByChatId,
     setContextMenuMessageId,
+    setOpenDeleteDialog,
     contextMenuMessageId,
     setOpenEditMessage,
+    setMessageNotification,
+    messageNotification,
     editMessage,
   } = useChatUI();
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const topRef = useRef<HTMLDivElement | null>(null);
+  const chatRef = useRef<HTMLDivElement | null>(null);
+
   const [reactionPickerMessageId, setReactionPickerMessageId] = useState<
     string | null
   >(null);
+  const { register, handleSubmit, reset } = useForm({
+    defaultValues: {
+      editMessageValue: "",
+    },
+  });
+
+  const [highlightedMessageId, setHighlightedMessageId] = useState<
+    string | null
+  >(null);
+
+  // pagination
+  useEffect(() => {
+    if (!topRef.current || !chatRef.current || !activeChatId) return;
+
+    const options = {
+      root: chatRef.current,
+      rootMargin: "50px 0px 0px 0px",
+      threshold: 0,
+    };
+
+    const callback = (entries: IntersectionObserverEntry[]) => {
+      if (entries[0].isIntersecting) {
+        fetchOlderMessages({
+          activeChatId,
+          myCursor: myCursorByChatId[activeChatId],
+        });
+      }
+    };
+    const observer = new IntersectionObserver(callback, options);
+    observer.observe(topRef.current);
+
+    return () => observer.disconnect();
+  }, [activeChatId, fetchOlderMessages, myCursorByChatId]);
+
+  useEffect(() => {
+    if (contextMenuMessageId) {
+      reset({
+        editMessageValue: contextMenuMessageId.content,
+      });
+    }
+  }, [contextMenuMessageId, reset]);
+
+  useEffect(() => {
+    const chatView = document.getElementById("chat-main");
+    if (!activeChatId || !chatView) return;
+
+    const { scrollHeight, scrollTop, clientHeight } = chatView;
+    const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
+
+    // by default open last msg if there are no new messages
+    if (messageNotification[activeChatId]?.unreadCount === 0) {
+      bottomRef.current?.scrollIntoView({
+        behavior: "auto",
+      });
+      return;
+    }
+
+    // scroll to the last new message
+
+    if (
+      messageNotification[activeChatId]?.unreadCount > 0 &&
+      distanceFromBottom < SCROLL_THRESHOLD
+    ) {
+      setMessageNotification((prev) => ({
+        ...prev,
+        [activeChatId]: {
+          ...prev[activeChatId],
+          unreadCount: 0,
+        },
+      }));
+      chatView.scrollTo({
+        top: scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [activeChatId, messageNotification, setMessageNotification]);
 
   if (!activeChatId) {
     return <p>nothing to render yet click on the .... </p>;
@@ -95,6 +183,37 @@ export default function ChatMain() {
 
   const findRepliedTo = (chatId: string) => {
     return chat?.find((message) => message.id === chatId);
+  };
+
+  const onSubmitEditMessage = ({ editMessageValue }) => {
+    if (editMessageValue === contextMenuMessageId?.content || !editMessageValue)
+      return;
+
+    editMessage({
+      messageId: contextMenuMessageId?.id,
+      chatId: activeChatId,
+      content: editMessageValue,
+    });
+  };
+
+  const scrollToMessage = () => {
+    if (!activeChatId) return;
+    const messageId = messageNotification[activeChatId].messageId;
+
+    requestAnimationFrame(() => {
+      document.getElementById(`message-${messageId}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+
+    setMessageNotification((prev) => ({
+      ...prev,
+      [activeChatId]: {
+        ...prev[activeChatId],
+        unreadCount: 0,
+      },
+    }));
   };
 
   return (
@@ -178,7 +297,12 @@ export default function ChatMain() {
           </Button>
         </CardAction>
       </Card>
-      <section className="flex flex-col flex-1 gap-y-4 bg-none pb-4 w-full overflow-auto no-scrollbar">
+      <section
+        className="relative flex flex-col flex-1 gap-y-4 bg-none pb-4 w-full overflow-auto no-scrollbar"
+        id="chat-main"
+        ref={chatRef}
+      >
+        <div ref={topRef} />
         {chat?.map((message, idx: number) => {
           const sender = message.sender;
 
@@ -359,14 +483,43 @@ export default function ChatMain() {
               ) : (
                 <ContextMenu>
                   <ContextMenuTrigger
-                    onClick={() => setContextMenuMessageId(message)}
-                    className="w-1/2" // change this div for side rendering
+                    onContextMenu={() => setContextMenuMessageId(message)}
+                    className={cn(
+                      "w-1/2",
+                      highlightedMessageId === message.id &&
+                        "animate-[highlightFade_3s_ease-out]",
+                    )}
+                    id={`message-${message.id}`}
                   >
                     <HoverCard openDelay={10} closeDelay={100}>
                       <HoverCardTrigger asChild>
                         <div className="flex flex-col gap-y-1 p-0 w-full">
                           {message?.replyToId && (
-                            <div className="flex flex-col justify-center items-start gap-y-0 py-0 pr-6 pl-11 w-full">
+                            <Button
+                              variant="ghost"
+                              size="lg"
+                              onClick={() => {
+                                const messageId = chat.find(
+                                  (msg) => msg.id === message.replyToId,
+                                )?.id;
+
+                                setHighlightedMessageId(messageId);
+
+                                requestAnimationFrame(() => {
+                                  document
+                                    .getElementById(`message-${messageId}`)
+                                    ?.scrollIntoView({
+                                      behavior: "smooth",
+                                      block: "center",
+                                    });
+                                });
+
+                                setTimeout(() => {
+                                  setHighlightedMessageId(null);
+                                }, 3000);
+                              }}
+                              className="flex flex-col justify-center items-start gap-y-0 py-0 pr-6 pl-11 w-full"
+                            >
                               <span className="flex flex-row gap-x-1 w-full text-neutral-500 items">
                                 <BsReplyAllFill className="" />{" "}
                                 <span className="flex flex-row justify-between items-start w-full font-sans font-semibold text-xs tracking-wide">
@@ -383,7 +536,7 @@ export default function ChatMain() {
                               <p className="bg-neutral-700 p-1 rounded-md max-w-4/5 font-sans text-neutral-500 text-sm truncate tracking-wide">
                                 {findRepliedTo(message?.replyToId)?.content}
                               </p>
-                            </div>
+                            </Button>
                           )}
                           <div className="flex flex-row items-center gap-2">
                             <Card
@@ -528,20 +681,20 @@ export default function ChatMain() {
                   </ContextMenuTrigger>
                   <ContextMenuContent>
                     <ContextMenuGroup>
-                      <ContextMenuItem
-                        onClick={() => setContextMenuMessageId(message)}
-                      >
-                        Reply
-                      </ContextMenuItem>
+                      <ContextMenuItem>Reply</ContextMenuItem>
                       <ContextMenuItem
                         onClick={() => {
-                          setContextMenuMessageId(message);
                           setOpenEditMessage(true);
                         }}
                       >
                         Edit message
                       </ContextMenuItem>
-                      <ContextMenuItem>Delete </ContextMenuItem>
+                      <ContextMenuItem
+                        variant="destructive"
+                        onClick={() => setOpenDeleteDialog(true)}
+                      >
+                        Delete{" "}
+                      </ContextMenuItem>
                     </ContextMenuGroup>
                     <ContextMenuSeparator />
                     <ContextMenuGroup>
@@ -554,47 +707,77 @@ export default function ChatMain() {
             </Fragment>
           );
         })}
-      </section>
-      <Dialog open={openEditMessage} onOpenChange={setOpenEditMessage}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Message</DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 gap-2 grid">
-              <Input defaultValue={contextMenuMessageId?.content} />
-            </div>
-          </div>
-          <DialogFooter className="sm:justify-start">
-            <Button
-              type="button"
-              className="bg-green-600 font-sans font-semibold"
-              size="sm"
-              onClick={() =>
-                editMessage({
-                  messageId: contextMenuMessageId?.id,
-                  chatId: activeChatId,
-                  content: "latest content",
-                })
-              }
-            >
-              Save
-            </Button>
+        <Dialog open={openEditMessage} onOpenChange={setOpenEditMessage}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Message</DialogTitle>
+            </DialogHeader>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 gap-2 grid">
+                <form
+                  onSubmit={handleSubmit(onSubmitEditMessage)}
+                  className="flex flex-col gap-2"
+                >
+                  <Input
+                    {...register("editMessageValue")}
+                    className="flex-1 p-2 pt-1 border-none focus-visible:ring-0 min-h-8 max-h-24 font-sans text-sm align-bottom leading-6 tracking-wider"
+                  />
 
-            <DialogClose asChild>
-              <Button
-                size="sm"
-                type="button"
-                className="font-sans font-semibold"
-              >
-                Close
-              </Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+                  <DialogFooter className="sm:justify-start">
+                    <Button
+                      type="submit"
+                      className="bg-green-600 hover:bg-green-700 font-sans font-semibold"
+                      size="sm"
+                    >
+                      Save
+                    </Button>
+
+                    <DialogClose asChild>
+                      <Button
+                        size="sm"
+                        type="button"
+                        className="font-sans font-semibold"
+                      >
+                        Close
+                      </Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </form>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        <DeleteDialog />
+        <div ref={bottomRef} />
+      </section>
+
+      {messageNotification[activeChatId]?.unreadCount > 0 && (
+        <div
+          onClick={() => {
+            scrollToMessage();
+          }}
+          className="right-10 bottom-10 z-50 flex flex-row abosulute"
+        >
+          <FaAngleDoubleDown />
+          {messageNotification[activeChatId]?.unreadCount}
+        </div>
+      )}
 
       <MessageInput />
     </section>
   );
 }
+
+// [
+//     {
+//         "chatId": "1",
+//         "course": "Data Structures",
+//         "type": "course",
+//         "lastMessage": "okay",
+//         "lastMessageCreatedAt": "2026-01-29T16:16:37.227Z",
+//         "unreadMessageCount": 1,
+//         "chatName": "",
+//         "avatarUrl": "",
+//         "chatMemberId": "1"
+//     }
+// ]

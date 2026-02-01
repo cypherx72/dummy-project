@@ -2,26 +2,40 @@ import { GraphQLCustomLError } from "../../lib/error.js";
 import { GraphQLError } from "graphql";
 import { type contextType } from "../../lib/types.js";
 
-type fetchChatMetadata = {
+type CursorPaginationArgs = {
   input: {
-    userId: string; //todo: ensure that it's not the email used rather the id in the table
+    myCursor: string;
+    activeChatId: string;
   };
 };
 
-export async function FetchChatMetadata(
+export async function CursorPagination(
   _: any,
-  { input }: fetchChatMetadata,
+  { input }: CursorPaginationArgs,
   context: contextType,
 ) {
   const { prisma, req } = context;
+  const { myCursor, activeChatId } = input;
+  console.log("..ffd");
 
-  console.log("running the query");
+  const usr = { id: "1" };
 
   try {
+    const chatMember = await prisma.chatMember.findFirst({
+      where: { chatId: activeChatId, userId: usr.id },
+    });
+
+    if (!chatMember) {
+      throw new GraphQLError("Unauthorized");
+    }
+
     const user = await prisma.user.findUnique({
-      where: { id: input.userId },
+      where: { id: usr.id },
       include: {
         chatMembers: {
+          where: {
+            chatId: activeChatId,
+          },
           include: {
             chat: {
               include: {
@@ -32,6 +46,10 @@ export async function FetchChatMetadata(
                 },
                 messages: {
                   take: 30,
+                  skip: 1,
+                  cursor: {
+                    id: myCursor,
+                  },
                   orderBy: { createdAt: "desc" },
                   include: {
                     sender: {
@@ -65,11 +83,10 @@ export async function FetchChatMetadata(
       },
     });
 
-    // todo: return the id of myCursor
-    // 🔴 IMPORTANT: never return null
     const chats = user?.chatMembers?.map((cm) => cm.chat) ?? [];
 
-    console.log("chats: ", chats[0].messages);
+    // if not user return a hasMore set to false
+    console.log("padination data: ", chats);
     return {
       chats,
     };

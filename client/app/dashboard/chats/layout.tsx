@@ -6,8 +6,16 @@ import {
   SEND_REACTION,
   EDIT_MESSAGE,
   FETCH_CHAT_DATA,
+  CURSOR_PAGINATION,
 } from "./query-mutation";
-import { EditMessageArgs, SendMessageArgs, SendReactionArgs } from "../types";
+import {
+  EditMessageArgs,
+  SendMessageArgs,
+  SendReactionArgs,
+  ChatUIContextType,
+  MessageNotificationType,
+  CursorPaginationType,
+} from "../types";
 import {
   createContext,
   useState,
@@ -15,11 +23,11 @@ import {
   useContext,
   useMemo,
   useRef,
-  RefObject,
+  useCallback,
 } from "react";
 import { connectSocket } from "@/lib/socketIO";
 import { Socket } from "socket.io-client";
-import { useMutation, useQuery } from "@apollo/client/react";
+import { useLazyQuery, useMutation, useQuery } from "@apollo/client/react";
 import {
   ChatSummary,
   Message,
@@ -32,29 +40,6 @@ import {
 const ChatUIContext = createContext<ChatUIContextType | undefined>(undefined);
 const userId = "1";
 
-type ChatUIContextType = {
-  chatSummaries: ChatSummary[];
-  messagesByChatId: Record<string, Message[]>;
-  chatMetadataByChatId: Record<string, ChatMetadata>;
-  activeChatId: string | null;
-  setActiveChatId: (chatId: string | null) => void;
-  chatBootstrapPayloadLoading: boolean;
-  handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  sendMessage: ({ chatId, content, media, replyToId }: SendMessageArgs) => void;
-  editMessage: ({ chatId, content, messageId }: EditMessageArgs) => void;
-
-  isTypingRef: RefObject<boolean>;
-
-  openRightChatAside: boolean;
-  contextMenuMessageId: Message | null;
-  openEditMessage: boolean;
-  setOpenEditMessage: (prev: boolean) => void;
-  setContextMenuMessageId: (prev: Message | null) => void;
-  setOpenRightChatAside: (prev: boolean) => void;
-  typingUser: Record<string, typingUserType[]>;
-  sendReaction: ({ chatId, messageId, emoji }: SendReactionArgs) => void;
-};
-
 export default function ChatProvider({
   children,
 }: {
@@ -63,7 +48,6 @@ export default function ChatProvider({
   const [typingUser, setTypingUser] = useState<
     Record<string, typingUserType[]>
   >({});
-  const [message, setMessage] = useState("");
   const [messagesByChatId, setMessagesByChatId] = useState<
     Record<string, Message[]>
   >({});
@@ -75,16 +59,49 @@ export default function ChatProvider({
   const [chatMetadataByChatId, setChatMetadataByChatId] = useState<
     Record<string, ChatMetadata>
   >({});
-  const isTypingRef = useRef(false);
+  const [myCursorByChatId, setMyCursorByChatId] = useState<
+    Record<string, string>
+  >({});
+  const [openDeleteDialog, setOpenDeleteDialog] = useState<boolean>(false);
   const [openEditMessage, setOpenEditMessage] = useState<boolean>(false);
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [messageNotification, setMessageNotification] = useState<
+    Record<string, MessageNotificationType>
+  >({});
+
+  const isTypingRef = useRef(false);
+
+  const [cursorPaginationQuery, { data: cursorPaginationData }] =
+    useLazyQuery(CURSOR_PAGINATION);
   const [sendMessageMutation, {}] = useMutation(SEND_MESSAGE);
-
   const [editMessageMutation, {}] = useMutation(EDIT_MESSAGE);
-
   const [markChatAsReadMutation, {}] = useMutation(MARK_CHAT_AS_READ);
-
   const [sendReactionMutation, {}] = useMutation(SEND_REACTION);
+
+  useEffect(() => {
+    if (cursorPaginationData) {
+      console.log("cursorpaddata", cursorPaginationData);
+      //todo
+      // setMyCursorByChatId((prev) => ({
+      //   ...prev,
+      //   [cursorPaginationData.id]: cursorPaginationData.lastMessage.id,
+      // }));
+    }
+  }, [cursorPaginationData]);
+
+  const fetchOlderMessages = useCallback(
+    ({ activeChatId, myCursor }: CursorPaginationType) => {
+      cursorPaginationQuery({
+        variables: {
+          input: {
+            activeChatId,
+            myCursor,
+          },
+        },
+      });
+    },
+    [cursorPaginationQuery],
+  );
 
   const debounce = <T extends (...args: any[]) => void>(
     fn: T,
@@ -110,7 +127,7 @@ export default function ChatProvider({
         });
 
         isTypingRef.current = false;
-      }, 10000),
+      }, 5000),
     [socket],
   );
 
@@ -149,11 +166,19 @@ export default function ChatProvider({
   }, [activeChatId, socket]);
 
   useEffect(() => {
+    if (!openEditMessage) {
+      setContextMenuMessageId(null);
+    }
+  }, [openEditMessage]);
+
+  useEffect(() => {
     setContextMenuMessageId(null);
   }, [activeChatId]);
 
   useEffect(() => {
     if (!activeChatId) return;
+
+    // get the div's... and only if the condition is met then run query
 
     markChatAsReadMutation({
       variables: {
@@ -206,20 +231,34 @@ export default function ChatProvider({
     });
 
     socket.on("reaction:new", handleNewReaction);
-
+    socket.on("message:edit", handleEditMessage);
     socket.on("message:new", handleNewMessage);
 
     return () => {
       socket.off("typing");
       socket.off("stopped-typing");
+      socket.off("message:edit", handleEditMessage);
       socket.off("message:new", handleNewMessage);
       socket.off("reaction:new", handleNewReaction);
     };
   }, [socket]);
 
+  const handleEditMessage = (msg: Message) => {
+    setMessagesByChatId((prev) => ({
+      ...prev,
+      [msg.chatId]: [...prev[msg.chatId]].map((message) => {
+        if (msg.id === message.id) {
+          return {
+            ...message,
+            content: msg.content,
+          };
+        } else return message;
+      }),
+    }));
+  };
+
   const handleNewMessage = (msg: Message) => {
     // Update messages
-
     setMessagesByChatId((prev) => ({
       ...prev,
       [msg.chatId]: [...(prev[msg.chatId] || []), msg],
@@ -238,6 +277,27 @@ export default function ChatProvider({
           : chat,
       ),
     );
+
+    //update message notification
+    setMessageNotification((prev) => {
+      if (!prev[msg.chatId]?.unreadCount) {
+        return {
+          ...prev,
+          [msg.chatId]: {
+            unreadCount: 1,
+            messageId: msg.id,
+          },
+        };
+      }
+
+      return {
+        ...prev,
+        [msg.chatId]: {
+          ...prev[msg.chatId],
+          unreadCount: prev[msg.chatId].unreadCount + 1,
+        },
+      };
+    });
   };
 
   const handleNewReaction = (reaction: Reaction) => {
@@ -325,11 +385,15 @@ export default function ChatProvider({
             chat.messages.length > 0
               ? chat.messages[chat.messages.length - 1].createdAt
               : chat.createdAt,
-          unreadMessageCount: 0, // initial unread count set to 0
+          unreadMessageCount: 0, // set based upon the db
           chatName: "", // will be set later
           avatarUrl: "", // will be set later
         })),
       );
+
+      // set notification object
+
+      // setMessageNotification()
 
       // setting messages by chat id
       setMessagesByChatId(
@@ -339,6 +403,16 @@ export default function ChatProvider({
             return acc;
           },
           {} as Record<string, Message[]>,
+        ),
+      );
+
+      setMyCursorByChatId(
+        chats.reduce(
+          (acc, chat) => {
+            acc[chat.id] = chat.messages[0].id;
+            return acc;
+          },
+          {} as Record<string, string>,
         ),
       );
 
@@ -398,6 +472,8 @@ export default function ChatProvider({
     setContextMenuMessageId(null);
   }
 
+  function deleteMessage() {}
+
   function sendMessage({ chatId, content, media, replyToId }: SendMessageArgs) {
     if ((!content && !media) || !socket || !chatId) return;
 
@@ -423,19 +499,24 @@ export default function ChatProvider({
         messagesByChatId,
         setOpenRightChatAside,
         openRightChatAside,
-        message,
+        messageNotification,
         chatMetadataByChatId,
         activeChatId,
         setActiveChatId,
+        fetchOlderMessages,
         handleInputChange,
         editMessage,
         chatBootstrapPayloadLoading,
-        setMessage,
+        setMyCursorByChatId,
+        myCursorByChatId,
         sendReaction,
         setContextMenuMessageId,
         contextMenuMessageId,
         sendMessage,
         openEditMessage,
+        openDeleteDialog,
+        setOpenDeleteDialog,
+        setMessageNotification,
         setOpenEditMessage,
         isTypingRef,
         typingUser,

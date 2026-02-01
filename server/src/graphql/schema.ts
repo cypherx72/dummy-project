@@ -209,7 +209,13 @@ type Media {
   chatId: String!
   }
 
+  input CursorPaginationInput { 
+    myCursor: String!
+    activeChatId: String!
+  }
+
   type Query {
+    CursorPagination(input: CursorPaginationInput!) : FetchChatMetadataResponse!
     FetchSessionData(input: FetchSessionDataInput!): SessionData!
     LogInViaProvider(input: SignInViaProviderInput!):  SignInResponse!
     LogInViaPassword(input: LogInViaPasswordInput! ):  SignInResponse!
