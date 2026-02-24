@@ -7,10 +7,16 @@ import cors from "cors";
 import http from "http";
 import { typeDefs } from "./graphql/schema.js";
 import { resolvers } from "./graphql/resolvers.js";
-import prisma from "./prisma.js";
+import { decodeToken } from "./services/decode-token.js";
+import { prisma } from "./lib/prisma.js";
+import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
 import cookie from "cookie";
 import { v2 as cloudinary } from "cloudinary";
+import authRouter, { type User } from "./routes/auth.js";
+import cookieParser from "cookie-parser";
+import { JWT_SECRET_KEY } from "./config/passport-config.js";
+import passport from "passport";
 
 // Configure cloudinary
 cloudinary.config({
@@ -19,9 +25,11 @@ cloudinary.config({
 
 // Required logic for integrating with Express
 const app = express();
+app.use(cookieParser());
 // Our httpServer handles incoming requests to our Express app.
 // Below, we tell Apollo Server to "drain" this httpServer,
 // enabling our servers to shut down gracefully.
+
 const httpServer = http.createServer(app);
 // Same ApolloServer initialization as before, plus the drain plugin
 // for our httpServer.
@@ -38,9 +46,10 @@ await server.start();
 // Set up Socket.io server
 export const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "http://localhost:4000",
     methods: ["GET", "POST"],
     credentials: true,
+    allowedHeaders: ["Content-Type"],
   },
   connectionStateRecovery: {},
 });
@@ -58,8 +67,32 @@ const corsOptions = {
 app.set("trust proxy", true);
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// initialize passport
+app.use(passport.initialize());
+app.use("/auth", authRouter);
+
 app.use(
-  "/",
+  "/graphql",
+  // (req, res, next) => {
+  //   const token = req.cookies.access_token;
+
+  //   if (!token) {
+  //     return res.redirect("http://localhost:3000/auth/signin");
+  //   }
+
+  //   try {
+  //     const decoded = jwt.verify(token, JWT_SECRET_KEY);
+
+  //     req.user = decoded;
+
+  //     next();
+  //   } catch (err: any) {
+  //     console.error("Auth error:", err.message);
+
+  //     return res.redirect("http://localhost:3000/auth/signin");
+  //   }
+  // },
   express.json(),
   // expressMiddleware accepts the same arguments:
   // an Apollo Server instance and optional configuration options
@@ -79,39 +112,27 @@ io.on("connection", async (socket) => {
   try {
     console.log("New client connected:", socket.id);
     const cookieHeader = socket.handshake.headers.cookie;
+
     if (!cookieHeader) throw new Error("No cookies");
 
     const cookies = cookie.parse(cookieHeader);
 
-    const token = cookies["authjs.session-token"];
-    if (!token) throw new Error("No token");
+    const accessToken = cookies["access_token"];
 
-    /*
-    Verify JWT token 
-    todo: alright the main issue i'm faicing is that i'm not the one controlling the session-token which i want to use for socket auth. 
-    todo: need to find a way to sync next-auth session token secret with this server secret or find a way to read next-auth secret here.
+    if (!accessToken) throw new Error("No token");
 
-    const payload = jwt.verify(
-      token,
-      "pqe4Mqgah1FnwXoJAnxUCFMqTE1ybUMn5yJ+1jtyeWo="
-    );
-    */
-
-    const payload = {
-      userId: "1",
-      role: "student",
+    const sessionUser = decodeToken(accessToken) as {
+      userId: string;
+      role: string;
+      email: string;
+      image: string;
     };
 
     const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
+      where: { id: sessionUser.userId },
     });
 
     if (!user) throw new Error("User not found");
-
-    socket.user = {
-      id: payload.userId,
-      role: payload.role,
-    };
 
     const chatMemberships = await prisma.chatMember.findMany({
       where: { userId: user.id },

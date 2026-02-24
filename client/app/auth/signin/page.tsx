@@ -1,12 +1,10 @@
 "use client";
-import { SignInForm } from "@/components/auth/sign-in-form";
+import { SignInPage } from "@/components/auth/sign-in-form";
 
-export default function SignInPage() {
+export default function LoginPage() {
   return (
-    <div className="m-auto">
-      <div className="w-full max-w-sm md:max-w-3xl">
-        <SignInForm />
-      </div>
+    <div className="gap-6 m-auto p-6 md:p-10 w-auto">
+      <SignInPage />
     </div>
   );
 }

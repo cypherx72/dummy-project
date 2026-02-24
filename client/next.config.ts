@@ -27,6 +27,11 @@ const nextConfig: NextConfig = {
         hostname: "cdn.nba.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        pathname: "/**",
+      },
     ],
   },
 };

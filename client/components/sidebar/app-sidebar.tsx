@@ -89,7 +89,7 @@ const data = {
   projects: [
     {
       name: "Chats",
-      url: "#",
+      url: "/chats",
       icon: IoChatbubbles,
     },
     {
@@ -102,15 +102,15 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { open } = useSidebar();
-  const { data: session } = useSession();
+  // const { data: session } = useSession();
 
-  const user = {
-    email: session?.user?.email as string,
-    avatar: session?.user?.image as string,
-    name: session?.user?.name as string,
-  };
+  // const user = {
+  //   email: session?.user?.email as string,
+  //   avatar: session?.user?.image as string,
+  //   name: session?.user?.name as string,
+  // };
 
-  if (!session) redirect("auth/login");
+  // if (!session) redirect("auth/login");
 
   return (
     <Sidebar variant="inset" {...props} collapsible="icon">
@@ -133,9 +133,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavProjects projects={data.projects} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={user} />
-      </SidebarFooter>
+      <SidebarFooter>{/* <NavUser user={us  er} /> */}</SidebarFooter>
     </Sidebar>
   );
 }

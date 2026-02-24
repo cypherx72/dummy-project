@@ -83,12 +83,16 @@ export async function CursorPagination(
       },
     });
 
-    const chats = user?.chatMembers?.map((cm) => cm.chat) ?? [];
+    const chat = user?.chatMembers?.map((cm) => cm.chat) ?? [];
+    console.log(chat);
+    const messages = chat[0].messages.reverse();
 
+    console.log(messages);
     // if not user return a hasMore set to false
-    console.log("padination data: ", chats);
+
     return {
-      chats,
+      messages,
+      activeChatId,
     };
   } catch (err) {
     if (err instanceof GraphQLError) {

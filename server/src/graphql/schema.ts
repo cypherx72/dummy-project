@@ -78,6 +78,7 @@ type ChatMember {
   userId: String!
   role: UserRole!
   isMuted: Boolean!
+  unreadMessageCount: Int!
   joinedAt: Date!
   user: User!
 }
@@ -124,6 +125,11 @@ type Media {
   createdAt: Date!
 }
 
+type CursorPaginationResponse {
+  messages: [Message!]!
+  activeChatId: String!
+}
+
 
   type FetchChatMetadataResponse { 
     chats: [Chat!]!
@@ -135,16 +141,6 @@ type Media {
     id: String!
   }
 
-  input SendOTPInput {
-    contactNumber: String!
-    registrationId: String!
-  }
-    
-  input VerifyOTPInput { 
-    userOTP: String!
-    contactNumber: String!
-    registrationId: String!
-  }
 
   input SignInViaProviderInput {
     access_token: String!, 
@@ -205,6 +201,11 @@ type Media {
     chatId: String!
   }
 
+  input SendVerificationTokenInput { 
+    email: String!
+  }
+
+
   input MarkChatAsReadInput { 
   chatId: String!
   }
@@ -214,23 +215,30 @@ type Media {
     activeChatId: String!
   }
 
+  input VerifyAuthTokenInput { 
+    auth_token: String!
+    email: String!
+  }
+
+
+
   type Query {
-    CursorPagination(input: CursorPaginationInput!) : FetchChatMetadataResponse!
+    VerifyAuthToken(input: VerifyAuthTokenInput!): DefaultResponse!
+    CursorPagination(input: CursorPaginationInput!) : CursorPaginationResponse!
     FetchSessionData(input: FetchSessionDataInput!): SessionData!
     LogInViaProvider(input: SignInViaProviderInput!):  SignInResponse!
     LogInViaPassword(input: LogInViaPasswordInput! ):  SignInResponse!
-    Middleware: DefaultResponse!
     ForgotPassword(input: ForgotPasswordInput!): DefaultResponse!
     FetchChatMetadata(input: FetchChatMetadataInput!) : FetchChatMetadataResponse! 
   }
 
   type Mutation {
-    SendOTP(input: SendOTPInput!): DefaultResponse!
-    VerifyOTP(input: VerifyOTPInput!): DefaultResponse!
+    SendVerificationToken(input: SendVerificationTokenInput!): DefaultResponse!
     SignInViaProvider(input: SignInViaProviderInput!): SignInResponse!
     SignInViaPassword(input: SignInViaPasswordInput): SignInResponse!
     ResetPassword(input: ResetPasswordInput): DefaultResponse!
     SendMessage(input: SendMessageInput! ): DefaultResponse!
+     ClearAuthToken: DefaultResponse!
     EditMessage(input: EditMessageInput! ): DefaultResponse!
     SendReaction(input: SendReactionInput! ): DefaultResponse!
     MarkChatAsRead(input: MarkChatAsReadInput!): MarkChatAsReadResponse!

@@ -1,46 +1,77 @@
 "use client";
-import { cn } from "@/lib/utils";
-import { Card, CardContent } from "@/components/ui/card";
-import Image from "next/image";
-import FormInputs from "./form-inputs";
-import { SocialLoginButtons } from "./social-login-buttons";
 
-export function SignInForm({
+import { cn } from "@/lib/utils";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+import Link from "next/link";
+import { SocialLoginButtons } from "./social-login-buttons";
+import FormInput from "./form-inputs";
+
+const onSubmitHandler = () => {};
+export function SignInPage({
   className,
   ...props
 }: React.ComponentProps<"div">) {
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card className="p-0 overflow-hidden">
-        <CardContent className="grid md:grid-cols-2 p-0">
-          <div className="flex flex-col gap-6 p-6 md:p-8">
-            <div className="flex flex-col items-center text-center">
-              <h1 className="font-bold text-2xl">Welcome to Circle Space</h1>
-              <p className="text-muted-foreground text-balance">
-                Sign in to your account
-              </p>
-            </div>
-            <FormInputs buttontext="Sign in" page="signin" />
+      <Card>
+        <CardHeader className="gap-0 text-center">
+          <CardTitle className="text-xl">Hi, welcome!👋</CardTitle>
+          <Alert
+            variant="default"
+            className="my-6 border-orange-400 text-orange-400"
+          >
+            <AlertTitle className="font-bold">Notice!</AlertTitle>
+            <AlertDescription className="flex flex-col justify-center text-orange-400 text-center">
+              If you registered using Google or another provider, please log in
+              with that same provider. If you&apos;d prefer to use a password
+              instead, you can{" "}
+              <Link href="#" className="inline font-medium underline">
+                set one here.
+              </Link>
+            </AlertDescription>
+          </Alert>
 
+          <CardDescription>
+            Login with your LinkedIn or Google account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="gap-6 grid">
+            <div className="flex flex-col gap-4">
+              {/* Social Login Buttons */}
+              <SocialLoginButtons />
+            </div>
             <div className="after:top-1/2 after:z-0 after:absolute relative after:inset-0 after:flex after:items-center after:border-border after:border-t text-sm text-center">
               <span className="z-10 relative bg-card px-2 text-muted-foreground">
                 Or continue with
               </span>
             </div>
-            <div className="gap-4 grid grid-cols-2">
-              {/* Social login buttons */}
-              <SocialLoginButtons />
+            <div className="gap-6 grid">
+              <FormInput
+                buttontext="Log in"
+                page="sign-in"
+                onSubmitHandler={onSubmitHandler}
+              />
             </div>
-          </div>
-          <div className="hidden md:block relative bg-muted">
-            <Image
-              src="/images/sign-up.png"
-              priority
-              alt="Image"
-              className="absolute inset-0 w-full h-full object-cover"
-              height={500}
-              width={400}
-            />
+            <div className="text-sm text-center">
+              Haven&apos;t registerd yet?{" "}
+              <Link
+                href="/auth/register"
+                className="underline underline-offset-4"
+              >
+                Register here
+              </Link>
+              .
+            </div>
           </div>
         </CardContent>
       </Card>

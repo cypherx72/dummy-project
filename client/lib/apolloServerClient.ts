@@ -7,11 +7,11 @@ import {
 } from "@apollo/client";
 import { SetContextLink } from "@apollo/client/link/context";
 import fetch from "cross-fetch";
-import { getCookie } from "./get-cookie";
+import { getCookie } from "./get-session";
 
 export const createServerApolloClient = async (token?: string) => {
   const httpLink = new HttpLink({
-    uri: process.env.GRAPHQL_ENDPOINT || "http://localhost:4000/",
+    uri: "http://localhost:4000/graphql",
     fetch,
   });
 

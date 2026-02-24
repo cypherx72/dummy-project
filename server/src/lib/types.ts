@@ -1,4 +1,4 @@
-import { type PrismaClient } from "@prisma/client";
+import { type PrismaClient } from "@prisma/client/extension";
 import { Server as SocketIOServer } from "socket.io";
 
 export type contextType = {

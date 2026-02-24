@@ -28,7 +28,7 @@ export type Message = {
   chatId: string;
   content: string;
   createdAt: string;
-
+  chatMembers: ChatMember[];
   replyToId: string | null;
   deliveredAt: string | null;
   readAt: string | null;
@@ -66,7 +66,9 @@ export type Reaction = {
 };
 
 export type ChatMember = {
+  unreadMessageCount: number;
   userId: string;
+  id: string;
   role: "student" | "staffMember";
   isMuted: boolean;
   joinedAt: string;
@@ -114,7 +116,8 @@ export type typingUserType = {
 
 export type MessageNotificationType = {
   messageId: string;
-  unreadCount: number;
+  unreadMessageCount: number;
+  chatMemberId: string;
 };
 
 export type CursorPaginationType = {
@@ -125,7 +128,7 @@ export type CursorPaginationType = {
 export type ChatUIContextType = {
   chatSummaries: ChatSummary[];
   messagesByChatId: Record<string, Message[]>;
-  messageNotification: Record<string, MessageNotificationType>;
+  messageNotificationByChatId: Record<string, MessageNotificationType[]>;
   chatMetadataByChatId: Record<string, ChatMetadata>;
   activeChatId: string | null;
   setActiveChatId: (chatId: string | null) => void;
@@ -134,6 +137,7 @@ export type ChatUIContextType = {
   sendMessage: ({ chatId, content, media, replyToId }: SendMessageArgs) => void;
   editMessage: ({ chatId, content, messageId }: EditMessageArgs) => void;
   isTypingRef: RefObject<boolean>;
+
   openRightChatAside: boolean;
   contextMenuMessageId: Message | null;
   fetchOlderMessages: ({
@@ -147,8 +151,8 @@ export type ChatUIContextType = {
     React.SetStateAction<Record<string, string>>
   >;
   myCursorByChatId: Record<string, string>;
-  setMessageNotification: React.Dispatch<
-    React.SetStateAction<Record<string, MessageNotificationType>>
+  setMessageNotificationByChatId: React.Dispatch<
+    React.SetStateAction<Record<string, MessageNotificationType[]>>
   >;
   setOpenEditMessage: (prev: boolean) => void;
   setContextMenuMessageId: (prev: Message | null) => void;

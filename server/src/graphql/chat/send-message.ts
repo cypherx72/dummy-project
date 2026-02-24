@@ -107,7 +107,7 @@ export async function SendMessage(
       console.log("message", message);
 
       // Update unread state for other members
-      const chatMember = await tx.chatMember.updateMany({
+      const chatMember = await tx.chatMember.updateManyAndReturn({
         where: {
           chatId,
           userId: { not: user.id },
@@ -141,7 +141,7 @@ export async function SendMessage(
 
     const messagePayload = {
       ...result.message,
-      ...result.chatMember,
+      chatMembers: result.chatMember,
       media: mediaObj
         ? {
             cloudinary_url: mediaObj?.cloudinary_url,

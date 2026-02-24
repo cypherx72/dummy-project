@@ -36,9 +36,9 @@ import {
   Reaction,
   typingUserType,
 } from "../types";
+import { useSession } from "@/context/session-context";
 
 const ChatUIContext = createContext<ChatUIContextType | undefined>(undefined);
-const userId = "1";
 
 export default function ChatProvider({
   children,
@@ -65,32 +65,52 @@ export default function ChatProvider({
   const [openDeleteDialog, setOpenDeleteDialog] = useState<boolean>(false);
   const [openEditMessage, setOpenEditMessage] = useState<boolean>(false);
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [messageNotification, setMessageNotification] = useState<
-    Record<string, MessageNotificationType>
-  >({});
+  const [messageNotificationByChatId, setMessageNotificationByChatId] =
+    useState<Record<string, MessageNotificationType[]>>({});
 
   const isTypingRef = useRef(false);
+  const { user } = useSession();
+  const userId = user?.userId;
 
   const [cursorPaginationQuery, { data: cursorPaginationData }] =
     useLazyQuery(CURSOR_PAGINATION);
   const [sendMessageMutation, {}] = useMutation(SEND_MESSAGE);
   const [editMessageMutation, {}] = useMutation(EDIT_MESSAGE);
   const [markChatAsReadMutation, {}] = useMutation(MARK_CHAT_AS_READ);
-  const [sendReactionMutation, {}] = useMutation(SEND_REACTION);
+  const [sendReactionMutation, {}] = useMutation(SEND_REACTION, {});
+
+  useEffect(() => {
+    console.log(messageNotificationByChatId);
+  }, [messageNotificationByChatId]);
 
   useEffect(() => {
     if (cursorPaginationData) {
       console.log("cursorpaddata", cursorPaginationData);
-      //todo
-      // setMyCursorByChatId((prev) => ({
-      //   ...prev,
-      //   [cursorPaginationData.id]: cursorPaginationData.lastMessage.id,
-      // }));
+
+      // merging previous messages with current messages
+      // todo: get the chatId from backend and replace it on activeChatId & the hasMore
+      setMessagesByChatId((prev) => ({
+        ...prev,
+        [cursorPaginationData.cursorPaginationResponse.activeChatId]:
+          cursorPaginationData.cursorPaginationResponse.messages.concat(
+            ...prev[cursorPaginationData.cursorPaginationResponse.activeChatId],
+          ),
+      }));
+
+      //todo: fix here??
+      setMyCursorByChatId((prev) => ({
+        ...prev,
+        [cursorPaginationData.cursorPaginationResponse?.messages[0]?.chatId]:
+          cursorPaginationData.cursorPaginationResponse?.messages[0]?.id,
+      }));
+
+      // updating messages for the chatID
     }
   }, [cursorPaginationData]);
 
   const fetchOlderMessages = useCallback(
     ({ activeChatId, myCursor }: CursorPaginationType) => {
+      console.log("received props", activeChatId, myCursor);
       cursorPaginationQuery({
         variables: {
           input: {
@@ -279,23 +299,17 @@ export default function ChatProvider({
     );
 
     //update message notification
-    setMessageNotification((prev) => {
-      if (!prev[msg.chatId]?.unreadCount) {
-        return {
-          ...prev,
-          [msg.chatId]: {
-            unreadCount: 1,
-            messageId: msg.id,
-          },
-        };
-      }
+    //todo : update the message notification,
+    setMessageNotificationByChatId((prev) => {
+      const currentUserMessageNotification = {
+        ...prev[msg.chatId].find(
+          (messageNotification) => messageNotification.chatMemberId === "1",
+        ),
+      };
 
       return {
         ...prev,
-        [msg.chatId]: {
-          ...prev[msg.chatId],
-          unreadCount: prev[msg.chatId].unreadCount + 1,
-        },
+        [msg.chatId]: [...msg.chatMembers, currentUserMessageNotification],
       };
     });
   };
@@ -391,9 +405,25 @@ export default function ChatProvider({
         })),
       );
 
-      // set notification object
+      // set notification object by chatId for each chat memmber
+      setMessageNotificationByChatId(
+        chats.reduce(
+          (acc, chat) => {
+            acc[chat.id] = chat.chatMembers.map((chatMember) => ({
+              chatMemberId: chatMember.id,
+              messageId:
+                chat.messages[
+                  chat.messages.length - chatMember.unreadMessageCount - 1
+                ]?.id,
+              unreadMessageCount: chatMember.unreadMessageCount,
+              id: chatMember.id,
+            }));
 
-      // setMessageNotification()
+            return acc;
+          },
+          {} as Record<string, MessageNotificationType[]>,
+        ),
+      );
 
       // setting messages by chat id
       setMessagesByChatId(
@@ -409,7 +439,7 @@ export default function ChatProvider({
       setMyCursorByChatId(
         chats.reduce(
           (acc, chat) => {
-            acc[chat.id] = chat.messages[0].id;
+            if (chat.messages.length > 0) acc[chat.id] = chat.messages[0].id;
             return acc;
           },
           {} as Record<string, string>,
@@ -499,7 +529,7 @@ export default function ChatProvider({
         messagesByChatId,
         setOpenRightChatAside,
         openRightChatAside,
-        messageNotification,
+        messageNotificationByChatId,
         chatMetadataByChatId,
         activeChatId,
         setActiveChatId,
@@ -516,7 +546,7 @@ export default function ChatProvider({
         openEditMessage,
         openDeleteDialog,
         setOpenDeleteDialog,
-        setMessageNotification,
+        setMessageNotificationByChatId,
         setOpenEditMessage,
         isTypingRef,
         typingUser,

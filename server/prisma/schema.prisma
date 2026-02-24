@@ -6,7 +6,8 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  output   = "../generated/prisma"
+  // url = "postgresql://neondb_owner:npg_myLW8sNMDv1u@ep-odd-queen-adsik7u5.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 }
 
 datasource db {
@@ -22,7 +23,7 @@ model Account {
    providerAccountId  String  @map("provider_account_id")
    refresh_token      String? @db.Text
    access_token       String? @db.Text
-   expires_at         Int?
+   expires_at         DateTime?
    token_type         String?
    scope              String?
    id_token           String? @db.Text
@@ -30,51 +31,39 @@ model Account {
 
    user User @relation(fields: [userId], references: [id], onDelete: Cascade)    
 
-   @@unique([provider, providerAccountId])
+
+  @@unique([provider, providerAccountId])
    @@map("accounts")
  }
 
-
- model Session {
-   id           String   @id @default(cuid())
-   sessionToken String   @unique @map("session_token")
-   userId       String   @map("user_id") @unique
-   expires      DateTime
-   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-   @@map("sessions")
- }
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@map("sessions")
+}
 
  model User {
    id            String    @id @default(cuid())
    name          String?
    email         String?   @unique
    emailVerified DateTime? @map("email_verified")
-   contactNumber String?   @map("contact_number") @unique
-   registrationId  String?   @map("registration_id") @unique
+   createdAt DateTime @default(now()) @map("created_at")
    image         String?
+   isActive Boolean @default(false)
+
+  password String? 
    role         userRole    @default(student)
    accounts      Account[]
    sessions      Session[]
-   otp         Otp?
   messages     Message[]
   chatMembers  ChatMember[]
-   
+  token Token?
 
    @@map("users")
- }
-
- model Otp {
-   id String @id @default(cuid())
-   userId       String  @unique @map("user_id")
-   code         String?
-   terminateOtp Int     @default(0) @map("terminate_otp")
-   expiresAt    DateTime @map("expires_at")
-   createdAt    DateTime @default(now()) @map("created_at")
-   updatedAt    DateTime @updatedAt @map("updated_at")
-   user User @relation(fields: [userId], references: [id])
-
-   @@map("otps")
  }
 
 
@@ -104,6 +93,7 @@ model Course {
 
   @@map("courses")
 }
+
 model Chat {
   id        String   @id @default(cuid())
   type      chatType
@@ -119,6 +109,29 @@ model Chat {
   links     Link[]
 
   @@map("chats")
+}
+
+
+
+
+model Token {
+  id         String   @id @default(cuid())
+  token      String?   @unique
+  type       TokenType
+  expiresAt  DateTime @map("expires_at")
+
+  userId     String @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+
+  @@map("tokens")
+}
+
+enum TokenType {
+  ACTIVATION
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
 }
 
 
@@ -269,3 +282,177 @@ enum chatType {
   thread 
   dm
 }
+
+
+/* 
+
+
+# Prisma Debugging & Setup Survival Guide (Node + ESM)
+
+## 1️⃣ Golden Rule (most important)
+
+**Do NOT customize Prisma Client output unless you absolutely must.**
+
+Let Prisma generate to its default location:
+
+```
+node_modules/@prisma/client
+```
+
+Custom output paths + ESM + tsx + Node = pain.
+
+---
+
+## 2️⃣ Version sanity check (FIRST thing to do when Prisma breaks)
+
+Always make sure these two match:
+
+```bash
+npm install prisma@latest @prisma/client@latest
+```
+
+Then regenerate:
+
+```bash
+npx prisma generate
+```
+
+If Prisma behaves weirdly → **assume version mismatch first**.
+
+---
+
+## 3️⃣ `schema.prisma` rules (very important)
+
+### ✅ Correct generator config
+
+```prisma
+generator client {
+  provider = "prisma-client-js"
+}
+```
+
+---
+
+## 4️⃣ Datasource URL rule (this is the part you mentioned)
+
+### During initialization / migration
+
+You **MUST** have this:
+
+```prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+```
+
+Prisma reads the database URL:
+
+* when running `prisma migrate`
+* when running `prisma db push`
+* when running `prisma generate`
+
+### After setup
+
+You **change or “disable” the URL**
+Prisma **always** reads it from:
+
+
+---
+
+## 5️⃣ tsconfig rules for Prisma (non-negotiable)
+
+If you are running Prisma in **Node (Express, Apollo, Auth.js)**:
+
+### ✅ Use this
+
+```json
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2023",
+    "strict": true,
+    "esModuleInterop": true
+  }
+}
+```
+
+### ❌ Do NOT use
+
+```json
+"moduleResolution": "bundler"
+```
+
+That is for **frontend bundlers**, not Node runtimes.
+
+---
+
+## 6️⃣ Clean reset procedure (when things get cursed)
+
+If Prisma starts throwing:
+
+* `runtime/library not found`
+* module exists but Node can’t resolve it
+* random crashes after generation
+
+Do this **exactly in this order**:
+
+```bash
+rm -rf node_modules
+rm -rf .prisma
+rm -rf app/generated   # only if you used custom output before
+npm install
+npx prisma generate
+```
+
+This fixes 90% of Prisma issues.
+
+---
+
+## 7️⃣ Runtime sanity test (fastest diagnosis)
+
+Run this:
+
+```bash
+node -e "import('@prisma/client').then(() => console.log('OK')).catch(console.error)"
+```
+
+* ✅ Prints `OK` → Prisma is fine
+* ❌ Fails → version / tsconfig / Node issue
+
+---
+
+## 8️⃣ Node version warning ⚠️
+
+Prisma is **stable on Node 18 & 20**.
+
+Node 25 = bleeding edge
+Works sometimes, breaks silently sometimes.
+
+If Prisma acts haunted → downgrade Node before debugging anything else.
+
+---
+
+## 9️⃣ Prisma mental model (remember this)
+
+* Prisma Client is **runtime code**, not just types
+* Node must be able to resolve it **at runtime**
+* Anything that messes with module resolution (bundler, custom output, mismatched versions) will break it
+
+---
+
+## 10️⃣ TL;DR (tattoo this)
+
+> **If Prisma breaks:**
+>
+> 1. Check versions
+> 2. Remove custom output
+> 3. Fix tsconfig (`NodeNext`)
+> 4. Regenerate client
+> 5. Test runtime import
+
+---
+
+
+*/ 

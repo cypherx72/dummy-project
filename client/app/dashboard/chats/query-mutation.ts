@@ -51,6 +51,7 @@ export const FETCH_CHAT_DATA = gql`
           id
           chatId
           userId
+          unreadMessageCount
           role
           isMuted
           joinedAt
@@ -110,65 +111,38 @@ export const MARK_CHAT_AS_READ = gql`
 export const CURSOR_PAGINATION = gql`
   query CursorPagination($input: CursorPaginationInput!) {
     cursorPaginationResponse: CursorPagination(input: $input) {
-      chats {
+      activeChatId
+      messages {
         id
-        type
-        courseId
+        chatId
+        content
         createdAt
-        updatedAt
+        replyToId
+        deliveredAt
+        readAt
 
-        course {
-          name
-        }
-
-        messages {
+        reactions {
           id
-          chatId
-          content
+          messageId
+          chatMemberId
           createdAt
-          replyToId
-          deliveredAt
-          readAt
-
-          reactions {
-            id
-            messageId
-            chatMemberId
-            createdAt
-            emoji
-          }
-
-          sender {
-            id
-            name
-            email
-            image
-          }
-
-          media {
-            createdAt
-            cloudinary_url
-            resource_type
-            size
-            name
-            associate
-          }
+          emoji
         }
 
-        chatMembers {
+        sender {
           id
-          chatId
-          userId
-          role
-          isMuted
-          joinedAt
+          name
+          email
+          image
+        }
 
-          user {
-            id
-            email
-            name
-            image
-          }
+        media {
+          createdAt
+          cloudinary_url
+          resource_type
+          size
+          name
+          associate
         }
       }
     }

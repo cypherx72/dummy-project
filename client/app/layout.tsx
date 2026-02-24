@@ -5,9 +5,8 @@ import React from "react";
 import { ApolloWrapper } from "./ApolloWrapper";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Toaster } from "sonner";
-import { auth } from "@/auth";
-import { SessionProvider } from "next-auth/react";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { SessionProvider } from "@/context/session-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,7 +28,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth();
   return (
     <html
       lang="en"
@@ -47,11 +45,11 @@ export default async function RootLayout({
         >
           {" "}
           <Toaster position="top-center" />
-          <ApolloWrapper>
-            <SessionProvider session={session}>
+          <SessionProvider>
+            <ApolloWrapper>
               <SidebarProvider>{children}</SidebarProvider>
-            </SessionProvider>
-          </ApolloWrapper>
+            </ApolloWrapper>
+          </SessionProvider>
         </ThemeProvider>
       </body>
     </html>

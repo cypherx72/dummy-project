@@ -138,7 +138,7 @@ export const MessageInput = () => {
   };
 
   return (
-    <div className="bottom-0 z-50 flex flex-col gap-1 bg-accent bg-blend-normal p-2 pt-0 w-full">
+    <div className="bottom-0 z-50 absolute flex flex-col gap-1 p-2 pt-0 w-full t">
       {emojiPickerOpen && (
         <div
           ref={emojiPickerRef}

@@ -15,8 +15,6 @@ export async function FetchChatMetadata(
 ) {
   const { prisma, req } = context;
 
-  console.log("running the query");
-
   try {
     const user = await prisma.user.findUnique({
       where: { id: input.userId },
@@ -66,12 +64,21 @@ export async function FetchChatMetadata(
     });
 
     // todo: return the id of myCursor
+    // todo handle here if there is no chat
     // 🔴 IMPORTANT: never return null
     const chats = user?.chatMembers?.map((cm) => cm.chat) ?? [];
+    // console.log(chats[0].chatMembers);
 
-    console.log("chats: ", chats[0].messages);
+    const reversedChats = chats.map((chat) => ({
+      ...chat,
+      messages: chat.messages.reverse(),
+    }));
+
+    console.log(reversedChats);
+
+    console.log();
     return {
-      chats,
+      chats: reversedChats,
     };
   } catch (err) {
     if (err instanceof GraphQLError) {
