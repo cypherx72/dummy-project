@@ -1,6 +1,7 @@
 import { GraphQLCustomLError } from "../../lib/error.js";
 import { GraphQLError } from "graphql";
 import { type contextType } from "../../lib/types.js";
+import { success } from "zod";
 
 type sendMessageArgs = {
   input: {
@@ -66,12 +67,14 @@ export async function SendMessage(
       //raise graphql error
     }
 
-    const user = { id: "1" };
+    const userId = req.user.userId;
 
     const isChatMember = await prisma.chatMember.findFirst({
-      where: { chatId, userId: user.id },
+      where: { chatId, userId },
+      include: { sender: true },
     });
 
+    console.log(isChatMember);
     if (!isChatMember) {
       throw new GraphQLError("Unauthorized");
     }
@@ -92,70 +95,73 @@ export async function SendMessage(
       mediaObj = await uploadMedia(media);
     }
 
-    const result = await prisma.$transaction(async (tx) => {
-      // Create message
-      const message = await tx.message.create({
+    const result = await prisma.$transaction(async (tx: typeof prisma) => {
+      const createdMessage = await tx.message.create({
         data: {
           chatId,
-          senderId: user.id,
+          senderId: isChatMember.sender.id,
           mediaId: mediaObj?.id,
           content,
           replyToId,
         },
       });
 
-      console.log("message", message);
+      await tx.chat.update({
+        where: { id: chatId },
+        data: { lastMessageId: createdMessage.id },
+      });
 
-      // Update unread state for other members
-      const chatMember = await tx.chatMember.updateManyAndReturn({
+      await tx.chatMember.updateMany({
         where: {
           chatId,
-          userId: { not: user.id },
+          senderId: { not: isChatMember.sender.id },
         },
         data: {
           unreadMessageCount: { increment: 1 },
         },
       });
 
-      console.log("chatmedmb", chatMember);
-      // 3️⃣ (Optional) reset sender unread
-      // await tx.chatMember.update({
-      //   where: {
-      //     chatId_userId: {
-      //       chatId,
-      //       userId: senderId,
-      //     },
-      //   },
-      //   data: {
-      //     unreadCount: 0,
-      //     lastReadAt: new Date(),
-      //   },
-      // });
+      const fullMessage = await tx.message.findUnique({
+        where: { id: createdMessage.id },
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          edited: true,
+          replyToId: true,
+          chatId: true,
+          reactions: true,
+          messageReceipts: true,
+          media: true,
+          starredMessages: true,
+          pinnedMessages: {
+            select: {
+              id: true,
+              messageId: true,
+              pinnedById: true,
+              pinnedAt: true,
+            },
+          },
+          sender: {
+            select: {
+              id: true,
+              user: {
+                select: {
+                  name: true,
+                  image: true,
+                  role: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+      });
 
-      // 4️⃣ Return what frontend needs
-      return {
-        message,
-        chatMember,
-      };
+      return fullMessage;
     });
 
-    const messagePayload = {
-      ...result.message,
-      chatMembers: result.chatMember,
-      media: mediaObj
-        ? {
-            cloudinary_url: mediaObj?.cloudinary_url,
-            resource_type: mediaObj?.resource_type,
-            createdAt: mediaObj?.createdAt,
-            size: mediaObj?.size,
-            name: mediaObj?.name,
-            associate: mediaObj?.associate,
-          }
-        : null,
-    };
-
-    console.log("mesgds", messagePayload);
-    io.to(`chat:${chatId}`).emit("message:new", messagePayload);
+    io.to(`chat:${chatId}`).emit("message:new", result);
 
     return {
       status: 200,

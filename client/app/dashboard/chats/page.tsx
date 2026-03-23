@@ -28,9 +28,8 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item";
-import { Input } from "@/components/ui/input";
 import { SiGotomeeting } from "react-icons/si";
-import { BsThreeDotsVertical } from "react-icons/bs";
+
 import { FaStar } from "react-icons/fa";
 import { GiCheckMark } from "react-icons/gi";
 import { LuLogOut } from "react-icons/lu";
@@ -65,7 +64,6 @@ import {
 } from "@/components/ui/resizable";
 import { useSession } from "@/context/session-context";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "react-resizable-panels";
 
 const dummyNotifications = [
   {
@@ -142,28 +140,24 @@ const dummyNotifications = [
 ];
 
 export default function Page() {
-  const { loading } = useSession();
-  const { chatBootstrapPayloadLoading } = useChatUI();
-
-  if (chatBootstrapPayloadLoading || loading)
-    return (
-      <Empty className="w-full h-full">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <Spinner />
-          </EmptyMedia>
-          <EmptyTitle>Getting your chats ready.</EmptyTitle>
-          <EmptyDescription>
-            Please wait while we fetch your conversations.
-          </EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
-          <Button variant="outline" size="sm">
-            Cancel
-          </Button>
-        </EmptyContent>
-      </Empty>
-    );
+  // return (
+  //   <Empty className="w-full h-full">
+  //     <EmptyHeader>
+  //       <EmptyMedia variant="icon">
+  //         <Spinner />
+  //       </EmptyMedia>
+  //       <EmptyTitle>Getting your chats ready.</EmptyTitle>
+  //       <EmptyDescription>
+  //         Please wait while we fetch your conversations.
+  //       </EmptyDescription>
+  //     </EmptyHeader>
+  //     <EmptyContent>
+  //       <Button variant="outline" size="sm">
+  //         Cancel
+  //       </Button>
+  //     </EmptyContent>
+  //   </Empty>
+  // );
 
   return (
     <SidebarProvider>
@@ -275,7 +269,7 @@ export default function Page() {
                     <DropdownMenuGroup>
                       <DropdownMenuSub>
                         <DropdownMenuSubTrigger>
-                          Invite users
+                          Message Teacher
                         </DropdownMenuSubTrigger>
                         <DropdownMenuPortal>
                           <DropdownMenuSubContent>

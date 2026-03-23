@@ -46,7 +46,11 @@ export const formatDate = (date: string): string => {
   return `${month} ${day}, ${year} ${hours}:${minutes} ${ampm}`;
 };
 
-export const timeFormat = (dateString: string) => {
+export const timeFormat = (dateString: string | null) => {
+  if (!dateString) {
+    return;
+  }
+
   const parsedDate = Date.parse(dateString);
   const date = new Date(parsedDate);
   const hour = date.getHours();

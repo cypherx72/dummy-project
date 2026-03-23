@@ -18,29 +18,40 @@ export async function EditMessage(
   const { prisma, io, req } = context;
   const { content, messageId, chatId } = input;
 
+  console.log(content);
+
   if (!content || !messageId || !chatId)
     return {
       // raise graphql error
     };
 
   try {
-    const user = { id: "1" };
-
-    const isChatMember = await prisma.chatMember.findFirst({
-      where: { chatId, userId: user.id },
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: { sender: true },
     });
-    console.log("found mebmer: ", isChatMember);
 
-    if (!isChatMember) {
+    const chatMember = await prisma.chatMember.findUnique({
+      where: {
+        chatId_senderId: {
+          chatId,
+          senderId: user.sender.id,
+        },
+      },
+    });
+    console.log("found mebmer: ", chatMember);
+
+    if (!chatMember) {
       throw new GraphQLError("Unauthorized");
     }
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: typeof prisma) => {
       // update message
       const message = await tx.message.update({
         data: {
           senderId: user.id,
           content,
+          edited: true,
         },
         where: {
           id: messageId,

@@ -2,114 +2,74 @@ import { GraphQLCustomLError } from "../../lib/error.js";
 import { GraphQLError } from "graphql";
 import { type contextType } from "../../lib/types.js";
 
-type sendMessageArgs = {
+type DeleteMessageArgs = {
   input: {
     chatId: string;
     messageId: string;
   };
 };
 
-export async function SendMessage(
+export async function DeleteMessage(
   _: any,
-  { input }: sendMessageArgs,
+  { input }: DeleteMessageArgs,
   context: contextType,
 ) {
   const { prisma, cloudinary, io, req } = context;
   const { chatId, messageId } = input;
 
-  type DeleteMediaArgs = {
-    publicId: string;
-    resourceType: string;
-  };
-  const deleteMedia = async ({ publicId, resourceType }: DeleteMediaArgs) => {
-    try {
-      // delete the media from cloudinary
-      const result = await cloudinary.uploader.destroy(publicId, {
-        resource_type: resourceType,
-      });
-      console.log(result);
-
-      return result;
-    } catch (error) {
-      console.error("000error");
-    }
-  };
-
   try {
-    if (!chatId && !messageId) {
-      //raise graphql error
+    if (!chatId || !messageId) {
+      throw new GraphQLError("chatId and messageId are required");
     }
 
-    const user = { id: "1" };
-
-    const isChatMember = await prisma.chatMember.findFirst({
-      where: { chatId, userId: user.id },
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: { sender: true },
     });
 
-    if (!isChatMember) {
+    if (!user || !user.sender) {
       throw new GraphQLError("Unauthorized");
     }
 
-    // fetch data from db
-    const message = await prisma.message.find({
+    console.log(user);
+    const chatMember = await prisma.chatMember.findUnique({
       where: {
-        id: messageId,
-      },
-      include: {
-        media: true,
+        chatId_senderId: {
+          chatId,
+          senderId: user.sender.id,
+        },
       },
     });
 
-    if (message.media) {
-      const result = await deleteMedia({});
-      const { publicId, resourceType } = message.media;
-
-      if (result.result.ok) {
-      }
+    if (!chatMember) {
+      throw new GraphQLError("Unauthorized");
     }
 
-    const result = await prisma.$transaction(async (tx) => {
-      // delete message
-      const message = await tx.message.delete({
-        where: {
-          id: messageId,
-        },
-      });
-
-      console.log("deleted message", message);
-
-      // Update unread state for other members
-
-      //   const chatMember = await tx.chatMember.updateMany({
-      //     where: {
-      //       chatId,
-      //       userId: { not: user.id },
-      //     },
-      //     data: {
-      //       unreadMessageCount: { increment: 1 },
-      //     },
-      //   });
-
-      //   console.log("chatmedmb", chatMember);
-
-      // 3️⃣ (Optional) reset sender unread
-      // await tx.chatMember.update({
-      //   where: {
-      //     chatId_userId: {
-      //       chatId,
-      //       userId: senderId,
-      //     },
-      //   },
-      //   data: {
-      //     unreadCount: 0,
-      //     lastReadAt: new Date(),
-      //   },
-      // });
-
-      // 4️⃣ Return what frontend needs
+    const deletedMessage = await prisma.message.update({
+      where: { id: messageId },
+      data: { deleted: true },
+      include: { media: true },
     });
 
-    io.to(`chat:${chatId}`).emit("message:delete", messageId);
+    if (deletedMessage.media) {
+      const { publicId, resourceType } = deletedMessage.media;
+
+      await cloudinary.uploader.destroy(publicId, {
+        resource_type: resourceType,
+      });
+    }
+
+    io.to(`chat:${chatId}`).emit("message:delete", deletedMessage);
+
+    await prisma.chatMember.updateMany({
+      where: {
+        chatId,
+        userId: { not: user.id },
+      },
+      data: {
+        unreadMessageCount: { decrement: 1 },
+      },
+    });
 
     return {
       status: 200,
@@ -117,14 +77,10 @@ export async function SendMessage(
       code: "MESSAGE_DELETED",
     };
   } catch (err) {
-    if (err instanceof GraphQLError) {
-      console.log(err);
-      throw err;
-    }
+    if (err instanceof GraphQLError) throw err;
 
     throw GraphQLCustomLError({
-      message:
-        "We couldn't activate your account. Please try again later. If this error persists, please contact our **support team**.",
+      message: "Something went wrong while deleting the message.",
       status: 500,
       code: "SERVER_ERROR",
     });

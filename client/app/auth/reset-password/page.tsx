@@ -1,5 +1,4 @@
 "use client";
-import { Button } from "@/components/ui/button";
 
 import {
   Card,
@@ -8,103 +7,107 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { FaRegEyeSlash } from "react-icons/fa";
-import { FaRegEye } from "react-icons/fa6";
-import { useRef, useState } from "react";
-import z from "zod";
-import { ResetSchema } from "@/config/ZodSchema";
-import { useForm } from "react-hook-form";
-import Link from "next/link";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import LoadingState from "@/components/ui/loading-state";
 import { showToast } from "@/components/ui/toast";
-import { gql } from "@apollo/client";
-import { useMutation } from "@apollo/client/react";
-import { pwdType } from "@/components/auth/form-inputs";
-import { redirect, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
+import FormInput, { FormValues } from "@/components/auth/form-inputs";
+import { useRouter } from "next/navigation";
 
-// query to ResetPassword
-const RESET_PASSWORD = gql`
-  mutation ResetPassword($password: String!, $token: String!) {
-    resetPassword: ResetPassword(
-      input: { token: $token, password: $password }
-    ) {
-      message
-      code
-      status
-    }
-  }
-`;
-type ResetPasswordResponse = {
-  resetPassword: {
-    message: string;
-    code: string;
-    status: number;
-  };
-};
+const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
 
 export default function ResetPassword() {
-  const [iconType, setIconType] = useState<pwdType>({
-    icon: FaRegEye,
-    type: "password",
-  });
+  const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
+  const [loadingVerify, setLoadingVerify] = useState(true);
 
-  const form = useForm<z.infer<typeof ResetSchema>>({
-    resolver: zodResolver(ResetSchema),
-    defaultValues: {
-      password: "",
-      confirmpassword: "",
-    },
-  });
-
-  const [resetPassword, { loading }] =
-    useMutation<ResetPasswordResponse>(RESET_PASSWORD);
+  const router = useRouter();
 
   const searchParams = useSearchParams();
 
-  const onSubmit = async (values: z.infer<typeof ResetSchema>) => {
-    const password = values.password;
-    const confirmpassword = values.confirmpassword;
+  const email = searchParams.get("email");
+  const token = searchParams.get("token");
 
-    if (password !== confirmpassword) {
-      showToast(
-        "Reset Password",
-        "Passwords do not match. Please re-enter both fields to ensure they are the same.",
-        "error"
-      );
-      return;
-    }
+  useEffect(() => {
+    const verify = async () => {
+      if (!token || !email) {
+        router.push("/auth/verify-account");
+        return;
+      }
+
+      try {
+        const response = await fetch(SERVER_URL + "/auth/verify-token", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, token, type: "reset_token" }),
+        });
+
+        if (!response.ok) {
+          router.push("/auth/verify-account");
+          return;
+        }
+
+        const data = await response.json();
+        setVerifiedEmail(data.data.email);
+      } catch (err) {
+        console.log(err);
+        router.push("/auth/verify-account");
+      } finally {
+        setLoadingVerify(false);
+      }
+    };
+
+    verify();
+  }, [token, email, router]);
+
+  const onSubmitHandler = async (values: FormValues) => {
+    const password = values.password;
 
     try {
-      const token = searchParams.get("token");
-
-      const { data, error } = await resetPassword({
-        variables: {
-          token,
-          password,
+      const response = await fetch(SERVER_URL + "/auth/reset-password", {
+        method: "POST",
+        body: JSON.stringify({ email, token, password }),
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
         },
       });
 
-      if (error) {
-        console.log(error);
+      const data = await response.json();
+      console.log(data);
+
+      if (!response.ok) {
+        showToast(
+          "Reset Error",
+          "Failed to reset password. Please try again later.",
+          "error",
+        );
+        router.push("/auth/forgot-password");
+        return;
       }
-      //todo: fix here
-      if (data?.resetPassword.status === 200) {
-        showToast("", "", "success");
-        redirect("/auth/login");
-      }
+
+      router.push("/auth/signin");
     } catch (err) {
       console.log(err);
+
+      showToast(
+        "Reset Error",
+        "Failed to reset password. Please try again later.",
+        "error",
+      );
     }
   };
+
+  if (loadingVerify) {
+    return (
+      <LoadingState
+        title="Verifying your account"
+        description="Please wait while we confirm your activation link."
+        fullScreen={true}
+      />
+    );
+  }
 
   return (
     <Card className="m-auto p-6 w-full max-w-sm">
@@ -116,56 +119,12 @@ export default function ResetPassword() {
         </CardDescription>
       </CardHeader>
       <CardContent className="gap-y-6">
-        <Form {...form}>
-          <form
-            noValidate
-            className="flex flex-col gap-y-6"
-            onSubmit={form.handleSubmit(onSubmit)}
-          >
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem className="relative">
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type={iconType.type} {...field} />
-                  </FormControl>
-
-                  <iconType.icon
-                    size={12}
-                    onClick={() => {
-                      setIconType((prevIcon) =>
-                        prevIcon.type === "password"
-                          ? { icon: FaRegEyeSlash, type: "text" }
-                          : { icon: FaRegEye, type: "password" }
-                      );
-                    }}
-                    className="top-10 right-3 absolute hover:bg-none focus:bg-none p-0 -translate-y-1/2"
-                  />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />{" "}
-            <FormField
-              control={form.control}
-              name="confirmpassword"
-              render={({ field }) => (
-                <FormItem className="relative">
-                  <FormLabel>Confirm Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" {...field} />
-                  </FormControl>
-
-                  <FormMessage className="max-w-[20svw]" />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" disabled={loading} className="w-full">
-              Confirm
-            </Button>
-          </form>
-        </Form>
+        <FormInput
+          email={verifiedEmail as string}
+          buttontext="Reset Password"
+          page="reset-password"
+          onSubmitHandler={onSubmitHandler}
+        />
       </CardContent>
     </Card>
   );

@@ -16,11 +16,16 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-import { useAuthUI } from "@/app/auth/layout";
+const SignInSchema = z.object({
+  email: z.string().regex(/^\d{8}@vupune\.ac\.in$/, {
+    message: "Enter a valid university email",
+  }),
+  password: z.string().min(1, "Password is required"),
+});
 
-export const ActivateAccountSchema = z
+export const AuthSchema = z
   .object({
     email: z.string().regex(/^\d{8}@vupune\.ac\.in$/, {
       message: "Enter a valid university email",
@@ -43,15 +48,15 @@ export const ActivateAccountSchema = z
     path: ["confirm-password"],
   });
 
-const EmailSchema = ActivateAccountSchema.pick({ email: true });
-const PasswordSchema = ActivateAccountSchema.pick({ password: true });
-const FormSchema = ActivateAccountSchema;
+const EmailSchema = AuthSchema.pick({ email: true });
+const FormSchema = AuthSchema;
 
 const schemaMap = {
   "verify-account": EmailSchema,
-  "reset-password": PasswordSchema,
+  "reset-password": FormSchema,
   "activate-account": FormSchema,
-  "sign-in": PasswordSchema && EmailSchema,
+  "sign-in": SignInSchema,
+  "forgot-password": EmailSchema,
 } as const;
 
 export type FormValues = {
@@ -67,18 +72,26 @@ export default function FormInput({
   buttontext: string;
   onSubmitHandler: (values: FormValues) => void;
   email?: string;
-  page: "sign-in" | "activate-account" | "reset-password" | "verify-account";
+  page:
+    | "sign-in"
+    | "activate-account"
+    | "reset-password"
+    | "verify-account"
+    | "forgot-password";
 }) {
+  const router = useRouter();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const { page, buttontext, onSubmitHandler, email } = props;
-  const { isLoading, setIsLoading } = useAuthUI();
 
   const Schema = schemaMap[page] ?? FormSchema;
   type inputValues = z.infer<typeof Schema>;
 
   const form = useForm<inputValues>({
     defaultValues: {
-      email: page === "activate-account" && email ? email : "",
+      email:
+        (page === "activate-account" || page === "reset-password") && email
+          ? email
+          : "",
       password: "",
       "confirm-password": "",
     },
@@ -91,15 +104,7 @@ export default function FormInput({
         <form
           method="POST"
           onSubmit={form.handleSubmit(async (formData) => {
-            console.log(formData);
-            onSubmitHandler(formData);
-            setIsLoading(true);
-            try {
-            } catch (err) {
-              console.log(err);
-            } finally {
-              setIsLoading(false);
-            }
+            await onSubmitHandler(formData);
           })}
           noValidate
           className={`flex flex-col gap-y-5 ${page === "activate-account" ? "gap-y-3" : "gap-y-6"} `}
@@ -110,13 +115,11 @@ export default function FormInput({
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="tracking-wide">
-                    University Email
-                  </FormLabel>
+                  <FormLabel className="tracking-wide">Email</FormLabel>
 
                   <FormControl>
                     <Input
-                      placeholder="SRN@vupune.ac.in"
+                      placeholder=""
                       {...field}
                       readOnly={page === "activate-account"}
                       type="email"
@@ -127,46 +130,49 @@ export default function FormInput({
               )}
             />
 
-            {page === "sign-in" ||
-              (page === "activate-account" && (
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem className="relative">
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input
-                          type={passwordVisible ? "text" : "password"}
-                          {...field}
-                        />
-                      </FormControl>
+            {(page === "sign-in" ||
+              page === "activate-account" ||
+              page === "reset-password") && (
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem className="relative">
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        type={passwordVisible ? "text" : "password"}
+                        {...field}
+                      />
+                    </FormControl>
 
-                      <span
-                        onClick={() => {
-                          setPasswordVisible((prev) => !prev);
-                        }}
-                        className="top-13 right-[-10px] absolute hover:bg-none focus:bg-none p-0 size-10 -translate-y-1/2"
+                    <span
+                      onClick={() => {
+                        setPasswordVisible((prev) => !prev);
+                      }}
+                      className="top-13 right-[-10px] absolute hover:bg-none focus:bg-none p-0 size-10 -translate-y-1/2"
+                    >
+                      {passwordVisible ? <FaRegEyeSlash /> : <FaRegEye />}
+                    </span>
+
+                    {props.buttontext === "Sign in" && (
+                      <Button
+                        variant="link"
+                        type="button"
+                        onClick={() => router.push("/auth/forgot-password")}
+                        className="ml-auto p-0 text-sm hover:underline underline-offset-4"
                       >
-                        {passwordVisible ? <FaRegEyeSlash /> : <FaRegEye />}
-                      </span>
+                        Forgot your password?
+                      </Button>
+                    )}
 
-                      {props.buttontext === "Log in" && (
-                        <Link
-                          href="#"
-                          className="ml-auto text-sm hover:underline underline-offset-4"
-                        >
-                          Forgot your password?
-                        </Link>
-                      )}
+                    <FormMessage className="max-w-[20svw]" />
+                  </FormItem>
+                )}
+              />
+            )}
 
-                      <FormMessage className="max-w-[20svw]" />
-                    </FormItem>
-                  )}
-                />
-              ))}
-
-            {page === "activate-account" && (
+            {(page === "activate-account" || page === "reset-password") && (
               <FormField
                 control={form.control}
                 name="confirm-password"

@@ -10,13 +10,14 @@ import { X } from "lucide-react";
 import Image from "next/image";
 import { BsReplyAllFill } from "react-icons/bs";
 import { useRef, useState } from "react";
-import { useChatUI } from "@/app/dashboard/chats/layout";
+import { useChatUI } from "@/context/chat/chat-context";
 import EmojiPicker, { EmojiStyle } from "emoji-picker-react";
 import { EmojiClickData, Theme } from "emoji-picker-react";
 import { MediaSchema } from "@/config/ZodSchema";
 import { Textarea } from "@/components/ui/textarea";
 import { useEffect } from "react";
-import { MdCancel } from "react-icons/md";
+import { MdOutlineCancel } from "react-icons/md";
+import { useChatMutations } from "@/app/hooks/chat/useChatMutations";
 
 export const MessageInput = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -24,13 +25,17 @@ export const MessageInput = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [error, setError] = useState<string[]>([]);
   const [emojiPickerTheme, setEmojiPickerTheme] = useState<Theme>(Theme.DARK);
+
   const {
-    sendMessage,
     handleInputChange,
     activeChatId,
-    setContextMenuMessageId,
-    contextMenuMessageId,
+    setContextMenuMessage,
+    openDeleteDialog,
+    openEditMessage,
+    openReplyMessage,
+    contextMenuMessage,
   } = useChatUI();
+  const { sendMessage } = useChatMutations();
 
   const emojiPickerRef = useRef<HTMLDivElement | null>(null);
   const emojiButtonRef = useRef<HTMLDivElement | null>(null);
@@ -81,7 +86,7 @@ export const MessageInput = () => {
     };
   }, [emojiPickerOpen]);
 
-  async function onSubmitMessage({ message }) {
+  async function onSubmitMessage({ message }: { message: string }) {
     if (!message?.trim() && !imagePreview) return;
 
     if (!activeChatId) {
@@ -93,9 +98,10 @@ export const MessageInput = () => {
         chatId: activeChatId,
         content: message?.trim(),
         media: imagePreview || undefined,
-        replyToId: contextMenuMessageId?.id,
+        replyToId: contextMenuMessage?.id,
       });
 
+      setContextMenuMessage(null);
       setImagePreview(null);
       reset();
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -179,23 +185,25 @@ export const MessageInput = () => {
         </div>
       )}
 
-      {contextMenuMessageId && (
-        <div className="flex flex-row justify-between items-start gap-2 shadow-neutral-950 shadow-sm p-1.5 rounded-md w-1/2">
-          <div className="flex flex-col justify-center items-start gap-y-0 w-9/10">
-            <span className="flex flex-row gap-x-1 bg-neutral-500 p-1 rounded-md rounded-b-none text-neutral-950 items">
-              <BsReplyAllFill className="" />{" "}
-              <span className="flex flex-row justify-between items-start font-sans font-semibold text-xs tracking-wide">
-                <p>Reply to {contextMenuMessageId.sender?.name}</p>
-              </span>
+      {openReplyMessage && (
+        <div className="flex flex-row justify-between items-start gap-2 bg-zinc-800/70 shadow-md backdrop-blur-sm p-2 border-1 border-l-4 border-l-amber-600 rounded-md w-3/4 font-sans">
+          <div className="flex flex-col gap-y-1 max-w-9/10 truncate">
+            {/* Header */}
+            <span className="flex items-center gap-x-2 font-semibold text-amber-600 text-xs">
+              <BsReplyAllFill />
+              Replying to {contextMenuMessage?.sender?.user.name}
             </span>
 
-            <p className="bg-neutral-500 p-1 rounded-md rounded-t-none rounded-r-md min-w-2/5 max-w-4/5 font-sans text-neutral-950 text-sm truncate tracking-wide">
-              {contextMenuMessageId?.content}
+            {/* Message Preview */}
+            <p className="text-zinc-100 text-sm truncate tracking-wide">
+              {contextMenuMessage?.content}
             </p>
           </div>
-          <MdCancel
-            className=""
-            onClick={() => setContextMenuMessageId(null)}
+
+          {/* Close Button */}
+          <MdOutlineCancel
+            className="text-zinc-400 hover:text-white transition cursor-pointer"
+            onClick={() => setContextMenuMessage(null)}
           />
         </div>
       )}
@@ -207,8 +215,7 @@ export const MessageInput = () => {
         <div ref={emojiButtonRef}>
           <LuSmilePlus
             onClick={() => setEmojiPickerOpen((prev) => !prev)}
-            className="p-2 cursor-pointer"
-            size={35}
+            className="p-2 size-8.5 cursor-pointer"
           />
         </div>
 

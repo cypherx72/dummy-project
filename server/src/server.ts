@@ -7,17 +7,18 @@ import cors from "cors";
 import http from "http";
 import { typeDefs } from "./graphql/schema.js";
 import { resolvers } from "./graphql/resolvers.js";
-import { decodeToken } from "./services/decode-token.js";
 import { prisma } from "./lib/prisma.js";
 import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
 import cookie from "cookie";
 import { v2 as cloudinary } from "cloudinary";
-import authRouter, { type User } from "./routes/auth.js";
+import authRouter from "./routes/routes.js";
 import cookieParser from "cookie-parser";
-import { JWT_SECRET_KEY } from "./config/passport-config.js";
 import passport from "passport";
+import { authMiddleware } from "./middleware/auth-middleware.js";
+import { error } from "console";
 
+const JWT_SECRET = process.env.JWT_SECRET!;
 // Configure cloudinary
 cloudinary.config({
   secure: true,
@@ -74,25 +75,7 @@ app.use("/auth", authRouter);
 
 app.use(
   "/graphql",
-  // (req, res, next) => {
-  //   const token = req.cookies.access_token;
-
-  //   if (!token) {
-  //     return res.redirect("http://localhost:3000/auth/signin");
-  //   }
-
-  //   try {
-  //     const decoded = jwt.verify(token, JWT_SECRET_KEY);
-
-  //     req.user = decoded;
-
-  //     next();
-  //   } catch (err: any) {
-  //     console.error("Auth error:", err.message);
-
-  //     return res.redirect("http://localhost:3000/auth/signin");
-  //   }
-  // },
+  authMiddleware,
   express.json(),
   // expressMiddleware accepts the same arguments:
   // an Apollo Server instance and optional configuration options
@@ -114,28 +97,38 @@ io.on("connection", async (socket) => {
     const cookieHeader = socket.handshake.headers.cookie;
 
     if (!cookieHeader) throw new Error("No cookies");
-
     const cookies = cookie.parse(cookieHeader);
-
-    const accessToken = cookies["access_token"];
+    const accessToken = cookies.access_token;
 
     if (!accessToken) throw new Error("No token");
 
-    const sessionUser = decodeToken(accessToken) as {
-      userId: string;
-      role: string;
-      email: string;
-      image: string;
-    };
+    // validate access token
+
+    let sessionUser = null;
+
+    try {
+      sessionUser = jwt.verify(accessToken, JWT_SECRET) as {
+        userId: string;
+        email: string;
+        image: string;
+        role: string;
+      };
+    } catch {
+      console.log(error);
+      return;
+    }
 
     const user = await prisma.user.findUnique({
       where: { id: sessionUser.userId },
+      include: { sender: true },
     });
 
     if (!user) throw new Error("User not found");
 
+    socket.join(`user:${user.id}`);
+
     const chatMemberships = await prisma.chatMember.findMany({
-      where: { userId: user.id },
+      where: { senderId: user.sender?.id as string },
       select: { chatId: true },
     });
 

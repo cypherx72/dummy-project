@@ -1,14 +1,15 @@
 "use client";
-import { gql } from "@apollo/client";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery } from "@apollo/client/react";
-
+import { useState } from "react";
+import { useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import FormInput, { FormValues } from "@/components/auth/form-inputs";
-import { SocialLoginButtons } from "@/components/auth/social-login-buttons";
-
+import Image from "next/image";
 import { GraduationCap, BookOpen, Users, Shield } from "lucide-react";
+import LoadingState from "@/components/ui/loading-state";
+import { errorToast, showToast } from "@/components/ui/toast";
+import { SocialLoginButtons } from "@/components/auth/social-login-buttons";
 
 const features = [
   { icon: BookOpen, text: "Access course materials & resources" },
@@ -16,74 +17,95 @@ const features = [
   { icon: Shield, text: "Secure university-verified identity" },
 ];
 
-const VERIFY_AUTH_TOKEN_QUERY = gql`
-  query VerifyAuthToken($input: VerifyAuthTokenInput!) {
-    authTokenResponse: VerifyAuthToken(input: $input) {
-      message
-      code
-      status
-    }
-  }
-`;
+const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL!;
 
-const CLEAR_AUTH_TOKEN = gql`
-  mutation ClearAuthToken {
-    clearAuthTokenResponse: ClearAuthToken {
-      message
-      code
-      status
-    }
-  }
-`;
-
-export default function ActivateAccountPage() {
+export default function VerifyAccountPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const auth_token = searchParams.get("token");
+  const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
+
+  const token = searchParams.get("token");
   const email = searchParams.get("email");
 
-  const { data, loading, error } = useQuery(VERIFY_AUTH_TOKEN_QUERY, {
-    variables: {
-      input: {
-        auth_token,
-        email,
-      },
-    },
-    skip: !auth_token && !email,
-  });
+  useEffect(() => {
+    const verify = async () => {
+      if (!token || !email) return;
 
-  const [clearAuthToken] = useMutation(CLEAR_AUTH_TOKEN);
+      try {
+        const response = await fetch(SERVER_URL + "/auth/verify-token", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, token, type: "activation_token" }),
+        });
 
-  if (!auth_token) return router.push("verify-account");
+        const data = await response.json();
 
-  if (loading) return <p>loading...</p>;
-  if (error) {
-    console.log(error);
-    return <>derro</>;
-  }
+        if (!response.ok || !data.success) {
+          router.push("/auth/verify-account");
+        }
 
-  if (data) console.log(data);
+        if (response.ok) {
+          setVerifiedEmail(data.data.email);
+        }
+      } catch (err: unknown) {
+        console.log(err);
+        errorToast();
+      }
+    };
 
-  // if data is 401 that means token has expired
+    verify();
+  }, [token, email, router]);
 
   const onSubmitHandler = async (formData: FormValues) => {
-    console.log(formData);
     const { email, password } = formData;
 
-    const res = await fetch("http://localhost:4000/auth/credentials", {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const response = await fetch(SERVER_URL + "/auth/credentials", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (!res.ok) throw new Error("Login failed");
+      const data = await response.json();
 
-    return res.json();
+      if (!response.ok || !data.success) {
+        showToast(
+          "Authentication Error",
+          data.message || "Invalid Credentials",
+          "error",
+        );
+      }
+
+      await fetch(SERVER_URL + "/auth/clear-token", {
+        method: "POST",
+        body: JSON.stringify({ type: "activation_token" }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+
+      router.push("/dashboard");
+    } catch (err: unknown) {
+      console.log(err);
+      errorToast();
+    }
   };
+
+  if (!verifiedEmail) {
+    return (
+      <LoadingState
+        title="Verifying your account"
+        description="Please wait while we confirm your activation link."
+        fullScreen={true}
+      />
+    );
+  }
 
   return (
     <div className="m-auto w-2/3 h-full">
@@ -104,21 +126,22 @@ export default function ActivateAccountPage() {
                 </p>
               </div>
               <FormInput
-                email={data?.authTokenResponse?.message}
+                email={verifiedEmail as string}
                 buttontext="Activate account"
                 page="activate-account"
                 onSubmitHandler={onSubmitHandler}
               />
+              <SocialLoginButtons />
             </div>
 
             <div className="hidden md:block relative bg-gradient-to-r from-blue-700 to-pink-700 rounded-2xl font-sans 00">
-              {/* <Image
+              <Image
                 src="https://images.unsplash.com/photo-1477281765962-ef34e8bb0967?q=80&w=733&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                 alt="University library with warm golden lighting"
                 fill
                 priority
                 className="absolute inset-0 rounded-2xl w-full h-full object-cover"
-              /> */}
+              />
               <div className="absolute rounded-r-lg" />
               <div className="z-10 relative flex flex-col justify-between items-center p-10 h-full">
                 <div />

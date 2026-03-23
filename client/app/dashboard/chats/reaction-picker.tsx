@@ -6,10 +6,8 @@ import { FaPlus } from "react-icons/fa6";
 
 export function ReactionPicker({
   onSelectEmoji,
-  className,
 }: {
   onSelectEmoji: (emoji: string) => void;
-  className?: string;
 }) {
   const { recent, pushReaction } = useRecentReactions();
   const [showPicker, setShowPicker] = useState<boolean>(false);
@@ -21,26 +19,24 @@ export function ReactionPicker({
   };
 
   return (
-    <div
-      className={`reaction-wrapper bg-neutral-700 rounded-2xl ${
-        className || ""
-      }`}
-    >
-      <div className="reaction-bar">
+    <div className={`bg-neutral-900 rounded-md gap-2 flex`}>
+      <div className="flex flex-row items-center just reaction-bar">
         {recent.map((emoji, idx) => (
           <Button
             key={idx}
             onClick={() => handleEmojiClick(emoji)}
-            className="p-2 text-xl"
+            className="p-0.5 text-xl"
             variant="ghost"
+            size="icon-sm"
           >
             {emoji}
           </Button>
         ))}
 
         <Button
-          variant="ghost"
-          className="bg-neutral-500 p-0 rounded-full text-xl"
+          size="icon-xs"
+          variant="secondary"
+          className="p-0.5 rounded-md text-xl"
           onClick={() => setShowPicker((prevState) => !prevState)}
         >
           <FaPlus />
@@ -77,7 +73,7 @@ export function useRecentReactions() {
     if (!stored) return;
     const parsedStored = JSON.parse(stored);
     const reactions = parsedStored.concat(
-      DEFAULT_REACTIONS.slice(0, MAX_RECENTS - parsedStored.length)
+      DEFAULT_REACTIONS.slice(0, MAX_RECENTS - parsedStored.length),
     );
 
     setRecent(reactions);
@@ -92,7 +88,7 @@ export function useRecentReactions() {
 
       const updated = [emoji, ...prev.filter((e) => e !== emoji)].slice(
         0,
-        MAX_RECENTS
+        MAX_RECENTS,
       );
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));

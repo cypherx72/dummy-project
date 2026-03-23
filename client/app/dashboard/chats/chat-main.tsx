@@ -1,13 +1,12 @@
 "use client";
 
 import { MessageInput } from "./message-input";
-import { useChatUI } from "@/app/dashboard/chats/layout";
+import { useChatUI } from "@/context/chat/chat-context";
 import { GoFileMedia } from "react-icons/go";
 import { VscPinned } from "react-icons/vsc";
 import { useRef, useState, useEffect } from "react";
 import { MdOutlineCall } from "react-icons/md";
 import { IoVideocamOutline } from "react-icons/io5";
-import { SlOptions } from "react-icons/sl";
 import { GoBellSlash } from "react-icons/go";
 import {
   Dialog,
@@ -18,35 +17,20 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { PiLinkSimple } from "react-icons/pi";
-
 import { IoChatbubblesOutline } from "react-icons/io5";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useForm } from "react-hook-form";
 import { DeleteDialog } from "./context-menu/dialogs";
-import { GoDotFill } from "react-icons/go";
-import { FaVideo } from "react-icons/fa";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import { IoMdContacts } from "react-icons/io";
-import { PiPhoneCallBold } from "react-icons/pi";
-import { SiGooglemeet } from "react-icons/si";
-import { FaAngleDoubleDown } from "react-icons/fa";
-import { MessageSearchBar } from "./search-bar";
-import { ThreeDots } from "./three-dots";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChatMessage } from "./chat-message";
-import { TiMessages } from "react-icons/ti";
 import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Empty,
   EmptyContent,
@@ -55,37 +39,40 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { FaAngleDoubleDown } from "react-icons/fa";
 import { IoIosChatbubbles } from "react-icons/io";
 import { ArrowUpRightIcon } from "lucide-react";
+import { AvatarImage, Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { DrawerScrollableContent } from "./drawer-scrollable-content";
 import { useSession } from "@/context/session-context";
+import { redirect } from "next/navigation";
+import { useChatMutations } from "@/app/hooks/chat/useChatMutations";
+
 const SCROLL_THRESHOLD = 120;
 
 export default function ChatMain() {
   const {
-    messagesByChatId,
     activeChatId,
-    sendReaction,
     typingUser,
-    fetchOlderMessages,
-    setOpenRightChatAside,
+    cursorPaginationQuery,
     openEditMessage,
     myCursorByChatId,
-    setContextMenuMessageId,
-    setOpenDeleteDialog,
-    contextMenuMessageId,
+    chatMessages,
+    contextMenuMessage,
     setOpenEditMessage,
+
+    setContextMenuMessage,
     setMessageNotificationByChatId,
     messageNotificationByChatId,
-    editMessage,
   } = useChatUI();
+
+  const { user } = useSession();
+  const { editMessage } = useChatMutations();
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const topRef = useRef<HTMLDivElement | null>(null);
   const chatRef = useRef<HTMLDivElement | null>(null);
-
-  const [reactionPickerMessageId, setReactionPickerMessageId] = useState<
-    string | null
-  >(null);
+  const cursorRef = useRef<Record<string, string | null>>({});
   const [highlightedMessageId, setHighlightedMessageId] = useState<
     string | null
   >(null);
@@ -96,84 +83,130 @@ export default function ChatMain() {
     },
   });
 
+  useEffect(() => {
+    cursorRef.current = myCursorByChatId;
+  }, [myCursorByChatId]);
   // Pagination
-  useEffect(() => {
-    if (!topRef.current || !chatRef.current || !activeChatId) return;
+  // useEffect(() => {
+  //   if (!activeChatId) return;
 
-    const options = {
-      root: chatRef.current,
-      rootMargin: "50px 0px 0px 0px",
-      threshold: 0,
-    };
+  //   const chat = chatMessages[activeChatId];
+  //   if (!chat?.length) return;
 
-    const callback = (entries: IntersectionObserverEntry[]) => {
-      if (entries[0].isIntersecting) {
-        fetchOlderMessages({
-          activeChatId,
-          myCursor: myCursorByChatId[activeChatId],
-        });
-      }
-    };
-    const observer = new IntersectionObserver(callback, options);
-    observer.observe(topRef.current);
+  //   const topEl = topRef.current;
+  //   const chatEl = chatRef.current;
 
-    return () => observer.disconnect();
-  }, [activeChatId, fetchOlderMessages, myCursorByChatId]);
+  //   if (!topEl || !chatEl) return;
 
-  useEffect(() => {
-    if (contextMenuMessageId) {
-      reset({
-        editMessageValue: contextMenuMessageId.content,
+  //   const observer = new IntersectionObserver(
+  //     async (entries) => {
+  //       if (!entries[0].isIntersecting) return;
+
+  //       const cursor = cursorRef.current[activeChatId];
+  //       if (!cursor) return;
+
+  //       console.log("executing pagination...");
+
+  //       await cursorPaginationQuery({
+  //         variables: {
+  //           input: {
+  //             chatId: activeChatId,
+  //             myCursor: cursor,
+  //           },
+  //         },
+  //       });
+  //     },
+  //     {
+  //       root: chatEl,
+  //       rootMargin: "50px 0px 0px 0px",
+  //       threshold: 0,
+  //     },
+  //   );
+
+  //   observer.observe(topEl);
+
+  //   return () => observer.disconnect();
+  // }, [activeChatId, chatMessages[activeChatId as string]]);
+
+  const handleScroll = async () => {
+    const chat = chatRef.current;
+    if (!chat) return;
+
+    if (chat.scrollTop < 80) {
+      const cursor = cursorRef.current[activeChatId as string];
+      if (!cursor) return;
+
+      await cursorPaginationQuery({
+        variables: {
+          input: {
+            chatId: activeChatId,
+            myCursor: cursor,
+          },
+        },
       });
     }
-  }, [contextMenuMessageId, reset]);
+  };
+
+  useEffect(() => {
+    if (contextMenuMessage) {
+      reset({
+        editMessageValue: contextMenuMessage?.content as string,
+      });
+    }
+  }, [contextMenuMessage, reset]);
 
   useEffect(() => {
     const chatView = document.getElementById("chat-main");
-    if (
-      !activeChatId ||
-      !chatView ||
-      !messageNotificationByChatId ||
-      !setMessageNotificationByChatId
-    )
-      return;
+
+    if (!activeChatId || !chatView || !user) return;
+
+    const notifications = messageNotificationByChatId?.[activeChatId];
+
+    if (!notifications?.length) return;
 
     const { scrollHeight, scrollTop, clientHeight } = chatView;
     const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
+    console.log(notifications);
+    const myNotification = notifications.find(
+      (notification) => notification.chatMemberId === "1",
+    );
+    console.log(myNotification);
 
-    console.log("trying to fix bug", messageNotificationByChatId[activeChatId]);
-    if (
-      messageNotificationByChatId[activeChatId].find(
-        (messageNotification) =>
-          messageNotification.unreadMessageCount === 0 &&
-          messageNotification.chatMemberId === "1",
-      )
-    ) {
+    if (!myNotification) return;
+
+    // Case 1: message read -> jump to bottom instantly
+    if (myNotification.unreadMessageCount === 0) {
       console.log("first if");
+
       bottomRef.current?.scrollIntoView({
         behavior: "auto",
       });
+
       return;
     }
 
-    if (
-      messageNotificationByChatId[activeChatId].find(
-        (messageNotification) =>
-          messageNotification.unreadMessageCount > 0 &&
-          messageNotification.chatMemberId === "1",
-      ) &&
+    // Case 2: unread messages and user near bottom
+    else if (
+      myNotification.unreadMessageCount > 0 &&
       distanceFromBottom < SCROLL_THRESHOLD
     ) {
       chatView.scrollTo({
         top: scrollHeight,
         behavior: "smooth",
       });
+    } else {
+      const messageId = messageNotificationByChatId[activeChatId].find(
+        (messageNotification) => messageNotification.chatMemberId === "1",
+      )?.messageId;
+
+      requestAnimationFrame(() => {
+        document.getElementById(`message-${messageId}`)?.scrollIntoView({
+          behavior: "auto",
+          block: "center",
+        });
+      });
     }
-  }, [
-    activeChatId,
-    messageNotificationByChatId,
-    setMessageNotificationByChatId,
-  ]);
+  }, [activeChatId, messageNotificationByChatId, user]);
 
   if (!activeChatId) {
     return (
@@ -199,34 +232,38 @@ export default function ChatMain() {
     );
   }
 
-  const chat = messagesByChatId[activeChatId as string];
-  const currentUserId = "1";
+  const chat = chatMessages[activeChatId as string];
+  console.log(chat);
 
-  const findRepliedTo = (chatId: string) => {
-    return chat?.find((message) => message.id === chatId);
-  };
-
-  const onSubmitEditMessage = ({ editMessageValue }) => {
-    if (editMessageValue === contextMenuMessageId?.content || !editMessageValue)
+  const onSubmitEditMessage = ({
+    editMessageValue,
+  }: {
+    editMessageValue: string;
+  }) => {
+    if (editMessageValue === contextMenuMessage?.content || !editMessageValue)
       return;
 
     editMessage({
-      messageId: contextMenuMessageId?.id,
+      messageId: contextMenuMessage?.id as string,
       chatId: activeChatId,
       content: editMessageValue,
     });
+    setContextMenuMessage(null);
   };
+
+  const myNotification = messageNotificationByChatId?.[activeChatId]?.find(
+    (n) => n.chatMemberId === "1",
+  );
 
   const scrollToMessage = () => {
     if (!activeChatId) return;
     const messageId = messageNotificationByChatId[activeChatId].find(
       (messageNotification) => messageNotification.chatMemberId === "1",
     )?.messageId;
-
     requestAnimationFrame(() => {
       document.getElementById(`message-${messageId}`)?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
+        behavior: "instant",
+        block: "center",
       });
     });
   };
@@ -244,7 +281,7 @@ export default function ChatMain() {
           defaultSize="8%"
           maxSize="8%"
           minSize="8%"
-          className="flex flex-row justify-start items-center"
+          className="flex flex-row justify-between items-center"
         >
           <Tabs defaultValue="overview">
             <TabsList
@@ -269,6 +306,7 @@ export default function ChatMain() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
+
           <div className="flex flex-row justify-end items-center gap-2 p-3 w-full h-full">
             <Button size="icon-sm" variant="outline">
               <IoVideocamOutline />
@@ -279,58 +317,64 @@ export default function ChatMain() {
             <Button size="icon-sm" variant="outline">
               <GoBellSlash />
             </Button>
-            <Button size="icon-sm" variant="outline">
-              <SlOptions />
-            </Button>{" "}
+            <DrawerScrollableContent />
           </div>
         </ResizablePanel>
+
         <ResizableHandle />
-        <ResizablePanel defaultSize="92%">
+
+        <ResizablePanel defaultSize="80%" maxSize="80%" minSize="80%">
           {/* Messages Container */}
           <section
-            className="relative flex flex-col flex-1 gap-y-4 bg-none pb-4 w-full h-full overflow-auto no-scrollbar"
+            className="relative flex flex-col flex-1 gap-y-4 bg-none pb-16 w-full h-full overflow-auto no-scrollbar"
             id="chat-main"
             ref={chatRef}
+            onScroll={() => handleScroll()}
           >
             <div ref={topRef} />
 
-            {chat?.map((message, idx: number) => {
-              const showDateSeparator =
-                idx === 0 ||
-                new Date(Date.parse(message.createdAt)).toDateString() !==
-                  new Date(Date.parse(chat[idx - 1].createdAt)).toDateString();
+            {chat?.length > 0 &&
+              chat?.map((message, idx: number) => {
+                const showDateSeparator =
+                  idx === 0 ||
+                  new Date(Date.parse(message.createdAt)).toDateString() !==
+                    new Date(
+                      Date.parse(chat[idx - 1].createdAt),
+                    ).toDateString();
 
-              return (
-                <ChatMessage
-                  key={message.id}
-                  message={message}
-                  sender={message.sender}
-                  currentUserId={currentUserId}
-                  showDateSeparator={showDateSeparator}
-                  dateString={new Date(
-                    Date.parse(message.createdAt),
-                  ).toDateString()}
-                  findRepliedTo={findRepliedTo}
-                  onContextMenu={setContextMenuMessageId}
-                  onOpenEditMessage={() => setOpenEditMessage(true)}
-                  onOpenDeleteDialog={() => setOpenDeleteDialog(true)}
-                  onSendReaction={(emoji, messageId, chatId) =>
-                    sendReaction({
-                      emoji,
-                      messageId,
-                      chatId,
-                    })
-                  }
-                  onScrollToMessage={scrollToMessage}
-                  highlightedMessageId={highlightedMessageId}
-                  setHighlightedMessageId={setHighlightedMessageId}
-                  reactionPickerMessageId={reactionPickerMessageId}
-                  setReactionPickerMessageId={setReactionPickerMessageId}
-                  chatId={activeChatId}
-                  messageId={message.id}
-                />
-              );
-            })}
+                return (
+                  <ChatMessage
+                    key={message.id}
+                    message={message}
+                    highlightedMessageId={highlightedMessageId}
+                    showDateSeparator={showDateSeparator}
+                    setHighlightedMessageId={setHighlightedMessageId}
+                  />
+                );
+              })}
+            {typingUser[activeChatId]?.length > 0 && (
+              <div className="flex flex-row items-center gap-12">
+                <div className="flex items-end gap-1.5 -space-x-1 *:data-[slot=avatar]:grayscale-0 *:data-[slot=avatar]:ring-1 *:data-[slot=avatar]:ring-amber-500 max-w-1/2">
+                  {typingUser[activeChatId].map((user, idx: number) => {
+                    return (
+                      <Avatar key={idx} className="size-6">
+                        <AvatarImage
+                          src="https://github.com/shadcn.png"
+                          alt=""
+                        />
+                        <AvatarFallback>LR</AvatarFallback>
+                      </Avatar>
+                    );
+                  })}
+                  {/* <ThreeDots /> */}
+                  <div className="flex gap-0.5">
+                    <Skeleton className="bg-zinc-300 rounded-full w-[0.3rem] h-[0.3rem]" />
+                    <Skeleton className="bg-zinc-300 rounded-full w-[0.3rem] h-[0.3rem]" />
+                    <Skeleton className="bg-zinc-300 rounded-full w-[0.3rem] h-[0.3rem]" />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Edit Message Dialog */}
             <Dialog open={openEditMessage} onOpenChange={setOpenEditMessage}>
@@ -380,24 +424,14 @@ export default function ChatMain() {
           </section>
 
           {/* Unread Messages Badge */}
-          {messageNotificationByChatId[activeChatId].find(
-            (messageNotification) =>
-              messageNotification.chatMemberId === "1" &&
-              messageNotification.unreadMessageCount > 0,
-          ) && (
+
+          {myNotification && myNotification.unreadMessageCount > 0 && (
             <div
-              onClick={() => {
-                scrollToMessage();
-              }}
-              className="right-10 bottom-10 z-50 absolute flex flex-row"
+              onClick={scrollToMessage}
+              className="right-10 bottom-10 z-70 absolute flex flex-row"
             >
               <FaAngleDoubleDown />
-              {
-                messageNotificationByChatId[activeChatId].find(
-                  (messageNotification) =>
-                    messageNotification.chatMemberId === "1",
-                )?.unreadMessageCount
-              }
+              {myNotification.unreadMessageCount}
             </div>
           )}
 

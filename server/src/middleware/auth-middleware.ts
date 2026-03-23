@@ -1,74 +1,40 @@
-// import jwt from "jsonwebtoken";
-// import type { Request, Response, NextFunction } from "express";
+import type { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
+import { prisma } from "../lib/prisma.js";
 
-// interface AuthenticatedRequest extends Request {
-//   user?: {
-//     id: string;
-//     email: string;
-//     name: string;
-//     image?: string;
-//   };
-//   sessionId?: string;
-// }
+const JWT_SECRET = process.env.JWT_SECRET!;
 
-// const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY || "dkafdk";
+export interface AuthRequest extends Request {
+  user?: any;
+}
 
-// export const authenticateToken = (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction,
-// ): void => {
-//   try {
-//     const token =
-//       req.cookies?.auth_token || req.headers.authorization?.split(" ")[1];
+export const authMiddleware = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const token = req.cookies?.access_token;
 
-//     if (!token) {
-//       res.status(401).json({
-//         success: false,
-//         error: {
-//           code: "UNAUTHORIZED",
-//           message: "No authentication token provided.",
-//           status: 401,
-//         },
-//       });
-//       return;
-//     }
+    if (!token) {
+      return res.status(401).json({ code: "NO_TOKEN" });
+    }
 
-//     const decoded = jwt.verify(token, JWT_SECRET_KEY) as { sessionId: string };
-//     req.user = decoded;
-//     req.sessionId = decoded.sessionId;
+    const decoded = jwt.verify(token, JWT_SECRET) as {
+      userId: string;
+    };
 
-//     next();
-//   } catch (error) {
-//     res.status(401).json({
-//       success: false,
-//       error: {
-//         code: "INVALID_TOKEN",
-//         message: "Invalid or expired token",
-//         status: 401,
-//       },
-//     });
-//   }
-// };
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+    });
 
-// export const optionalAuth = (
-//   req: AuthenticatedRequest,
-//   res: Response,
-//   next: NextFunction,
-// ): void => {
-//   try {
-//     const token =
-//       req.cookies?.auth_token || req.headers.authorization?.split(" ")[1];
+    if (!user || !user.isActive) {
+      return res.status(401).json({ code: "INVALID_SESSION" });
+    }
 
-//     if (token) {
-//       const decoded = jwt.verify(token, JWT_SECRET_KEY) as any;
-//       req.user = decoded;
-//       req.sessionId = decoded.sessionId;
-//     }
-
-//     next();
-//   } catch {
-//     // Token invalid but optional, so continue
-//     next();
-//   }
-// };
+    req.user = user;
+    next();
+  } catch (err: any) {
+    return res.status(401).json({ code: "INVALID_TOKEN" });
+  }
+};

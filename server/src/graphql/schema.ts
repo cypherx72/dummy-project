@@ -7,22 +7,6 @@ export const typeDefs = `
     code: String!
   }
 
-  type SignInResponse{ 
-      email : String!
-      id: String!
-      image: String!
-      name: String!
-  }
-
-  type SessionData { 
-    name: String!
-    email: String!
-    emailVerified: String
-    contactNumber: String!
-    registrationId: String!
-    image: String
-  }
-
 enum ChatType {
   course
   thread
@@ -44,7 +28,6 @@ type Chat {
   chatMembers: [ChatMember!]!
 }
 
-
 enum MediaType {
   image
   video
@@ -52,24 +35,47 @@ enum MediaType {
   text
 }
 
+type PinnedMessage { 
+  id: String!
+  messageId: String!, 
+  pinnedById: String!
+  pinnedAt: Date!
+}
+
+type StarredMessage { 
+  id: String!
+  senderId: String!
+  messageId: String!
+  createdAt: Date!
+}
+
+type MessageReceipt{ 
+  id: String!
+  messageId: String!
+  chatMemberId: String!
+  deliveredAt: Date!
+  readAt: Date
+}
+
 type Message {
   id: String!
   chatId: String!
-  senderId: String!
   content: String
   createdAt: Date!
-  deliveredAt: Date
-  readAt: Date
+  edited: Boolean!
   replyToId: String
-  sender: User!
+
+  sender: Sender!
+  pinnedMessages: [PinnedMessage!]
+  messageReceipts: [MessageReceipt!]
+  starredMessages: [StarredMessage!]
   media: Media
-  replies: [Message!]!
-  reactions: [Reaction!]!
+  reactions: [Reaction!]
 }
 
 enum UserRole {
   student
-  staffMember
+  teacher
 }
 
 type ChatMember { 
@@ -80,15 +86,30 @@ type ChatMember {
   isMuted: Boolean!
   unreadMessageCount: Int!
   joinedAt: Date!
-  user: User!
+  sender: Sender!
 }
 
-type User {
-  id: String!
-  email: String
-  name: String
+input DeleteMessageInput{ 
+  chatId: String!
+  messageId: String!
+}
+
+input PinMessageInput{ 
+  chatId: String!
+  messageId: String!
+}
+
+type User { 
+  email: String!
+  name: String!
   image: String
   role: UserRole!
+  id: String!
+}
+
+type Sender {
+  id:String!
+  user: User!
 }
 
 enum FileStatus {
@@ -111,7 +132,6 @@ type Reaction {
   emoji: String!
 }
 
-
 type Media {
   id: String!
   cloudinary_url: String!
@@ -126,122 +146,228 @@ type Media {
 }
 
 type CursorPaginationResponse {
+  chatId: String!
+  unreadMessageCount: Int!
   messages: [Message!]!
-  activeChatId: String!
+  nextCursor: String
 }
 
+type ChatSummaryResponse {
+  chats: [ChatSummary!]!
+}
 
-  type FetchChatMetadataResponse { 
-    chats: [Chat!]!
-  }
+type MarkChatAsReadResponse{ 
+  chatId: String!
+  unreadMessageCount: Int!
+  id: String!
+}
 
-  type MarkChatAsReadResponse{ 
-    chatId: String!
-    unreadMessageCount: Int!
-    id: String!
-  }
+type ChatSummary {
+  id: String!
+  imageUrl: String
+  courseName: String!
+  unreadMessageCount: Int!
+  lastMessage: LastMessagePreview
+}
 
+type LastMessagePreview {
+  content: String
+  createdAt: Date!
+  senderId: String!
+}
 
-  input SignInViaProviderInput {
-    access_token: String!, 
-    scope: String!, 
-    token_type: String!, 
-    id_token: String!, 
-    expires_at: Int!, 
-    type: String!, 
-    provider: String!, 
-    providerAccountId: String!, 
-    email: String!,
-  }
-
-  input SignInViaPasswordInput{ 
-    email: String!, 
-    password: String!,
-  }
-
-  input FetchSessionDataInput{
-  email: String!
-  }
-
-    input LogInViaPasswordInput { 
-    password: String!
-    email: String!
-  }
-
-  input ForgotPasswordInput { 
-    email: String!
-  }
-  
-  input ResetPasswordInput { 
-    token: String!
-    password: String!
-  }
-
-  input FetchChatMetadataInput { 
-    userId: String!
-  }
-
-  input SendMessageInput { 
-
+input SendMessageInput { 
   replyToId: String
   content: String
   media: String
   chatId: String!
-  }
+}
 
-  input EditMessageInput { 
+input EditMessageInput { 
   content: String!
   messageId: String!
   chatId: String!
-  }
+}
 
-  input SendReactionInput { 
-    messageId: String!
-    emoji: String!
-    chatId: String!
-  }
-
-  input SendVerificationTokenInput { 
-    email: String!
-  }
-
-
-  input MarkChatAsReadInput { 
+input SendReactionInput { 
+  messageId: String!
+  emoji: String!
   chatId: String!
-  }
+}
 
-  input CursorPaginationInput { 
-    myCursor: String!
-    activeChatId: String!
-  }
+input StarMessageInput { 
+  messageId: String!
+  chatId: String!
+}
 
-  input VerifyAuthTokenInput { 
-    auth_token: String!
-    email: String!
-  }
+input MarkChatAsReadInput { 
+  chatId: String!
+}
+
+input CursorPaginationInput { 
+  myCursor: String
+  chatId: String!
+}
+
+type UnreadMessageCount { 
+  unreadMessageCount: Int!
+}
+
+type ChatMessagesResponse {
+  chatId: String!
+  unreadMessageCount: Int!
+  messages: [Message!]!
+  nextCursor: String
+}
+
+input chatMessagesInput { 
+  chatId: String!
+}
+
+input AttachmentInput {
+  bytes: Int!
+  resourceType:String!
+  publicId:String!
+  name: String!
+cloudinaryUrl: String!
+fileExtension: String!
+
+}
+  
+input CreateTaskInput{ 
+  courseId: String!
+    time: String!
+    title: String!
+    description: String!
+    priorityStatus: PriorityStatus!
+    maxPoints: Int!
+    submissionType:SubmissionType!
+    dueDate: Date!
+    extendDate: Boolean!
+    instructions: String 
+    attachments: [AttachmentInput]
+    comments: String 
+}
+
+enum PriorityStatus { 
+low 
+medium 
+high}
+
+enum SubmissionType { 
+fileUpload 
+textEntry
+websiteUrl }
 
 
+#########################
+# DASHBOARD TYPES
+#########################
 
-  type Query {
-    VerifyAuthToken(input: VerifyAuthTokenInput!): DefaultResponse!
-    CursorPagination(input: CursorPaginationInput!) : CursorPaginationResponse!
-    FetchSessionData(input: FetchSessionDataInput!): SessionData!
-    LogInViaProvider(input: SignInViaProviderInput!):  SignInResponse!
-    LogInViaPassword(input: LogInViaPasswordInput! ):  SignInResponse!
-    ForgotPassword(input: ForgotPasswordInput!): DefaultResponse!
-    FetchChatMetadata(input: FetchChatMetadataInput!) : FetchChatMetadataResponse! 
-  }
+type DashboardCourse {
+  id: ID!
+  title: String!
+  code: String!
+  description: String
+  departmentId: ID
+  teacherId: ID
+  createdAt: String
+}
 
-  type Mutation {
-    SendVerificationToken(input: SendVerificationTokenInput!): DefaultResponse!
-    SignInViaProvider(input: SignInViaProviderInput!): SignInResponse!
-    SignInViaPassword(input: SignInViaPasswordInput): SignInResponse!
-    ResetPassword(input: ResetPasswordInput): DefaultResponse!
-    SendMessage(input: SendMessageInput! ): DefaultResponse!
-     ClearAuthToken: DefaultResponse!
-    EditMessage(input: EditMessageInput! ): DefaultResponse!
-    SendReaction(input: SendReactionInput! ): DefaultResponse!
-    MarkChatAsRead(input: MarkChatAsReadInput!): MarkChatAsReadResponse!
-  }
+type Assignment {
+  id: ID!
+  title: String!
+  description: String
+  dueDate: String!
+  courseId: ID!
+  createdBy: ID!
+  createdAt: String!
+  course: DashboardCourse!
+}
 
+type Notification {
+  id: ID!
+  userId: ID!
+  title: String!
+  message: String!
+  type: String
+  isRead: Boolean!
+  createdAt: String!
+}
+
+type Event {
+  id: ID!
+  title: String!
+  location: String
+  startDate: String!
+}
+
+type RecentActivity {
+  id: ID!
+  activity: String!
+  userId: ID!
+  description: String!
+  type: String!
+  courseId: ID
+  createdAt: String!
+}
+
+type UploadSignatureResponse { 
+  signature: String!
+  timestamp: Int!
+  apiKey: String!
+  cloudName: String!
+  folder: String!
+}
+
+type Task {
+  id: ID!
+  userId: ID!
+  title: String!
+  dueTime: String
+  completed: Boolean!
+  createdAt: String!
+}
+
+
+type DashboardResponse {
+  status: Int!
+  message: String!
+  code: String!
+
+  courses: [DashboardCourse!]!
+  activities: [RecentActivity!]!
+  assignments: [Assignment!]!
+  notifications: [Notification!]!
+  events: [Event!]!
+  tasks: [Task!]!
+}
+
+#########################
+# ROOT TYPES
+#########################
+
+type Query {
+  CursorPagination(input: CursorPaginationInput!) : CursorPaginationResponse!
+  chatSummary: ChatSummaryResponse!
+  chatMessages(input: chatMessagesInput! ): ChatMessagesResponse!
+  GetDashboardData: DashboardResponse!
+
+
+}
+
+type Mutation {
+
+  PinMessage(input: PinMessageInput!): DefaultResponse!
+  StarMessage(input: StarMessageInput!): DefaultResponse!
+  SendMessage(input: SendMessageInput! ): DefaultResponse!
+  DeleteMessage(input: DeleteMessageInput!): DefaultResponse!
+  EditMessage(input: EditMessageInput! ): DefaultResponse!
+  SendReaction(input: SendReactionInput! ): DefaultResponse!
+  MarkChatAsRead(input: MarkChatAsReadInput!): MarkChatAsReadResponse!
+
+  
+  GetUploadSignature: UploadSignatureResponse!
+  CreateTask(input: CreateTaskInput!): DefaultResponse!
+}
 `;

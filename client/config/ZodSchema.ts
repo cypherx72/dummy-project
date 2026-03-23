@@ -12,7 +12,7 @@ export const SignInSchema = z.object({
       {
         error:
           "Your password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
-      }
+      },
     ),
 });
 
@@ -31,7 +31,7 @@ export const ResetSchema = z.object({
       {
         error:
           "Your password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
-      }
+      },
     ),
   confirmpassword: z.string(),
 });
@@ -69,14 +69,14 @@ const ACCEPTED_MIME_TYPES = [
   "application/pdf",
 ];
 
-export const MediaSchema = z
+export const fileSchema = z
   .any()
   .refine(
     (f) => f instanceof File,
 
     {
       message: "No file provided.",
-    }
+    },
   )
   .refine(
     (file) => file.size <= MAX_FILE_SIZE,
@@ -85,14 +85,40 @@ export const MediaSchema = z
       message: `The file is too large. Max size is ${
         MAX_FILE_SIZE / (1024 * 1024)
       }MB.`,
-    }
+    },
   )
   .refine(
     (file) => ACCEPTED_MIME_TYPES.includes(file.type),
 
     {
       message: "Only JPEG, PNG, WebP images or PDF files are allowed.",
-    }
+    },
+  );
+
+export const MediaSchema = z
+  .any()
+  .refine(
+    (f) => f instanceof File,
+
+    {
+      message: "No file provided.",
+    },
+  )
+  .refine(
+    (file) => file.size <= MAX_FILE_SIZE,
+
+    {
+      message: `The file is too large. Max size is ${
+        MAX_FILE_SIZE / (1024 * 1024)
+      }MB.`,
+    },
+  )
+  .refine(
+    (file) => ACCEPTED_MIME_TYPES.includes(file.type),
+
+    {
+      message: "Only JPEG, PNG, WebP images or PDF files are allowed.",
+    },
   );
 
 export type ValidatedFile = z.infer<typeof fileSchema>;

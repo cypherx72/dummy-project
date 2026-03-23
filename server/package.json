@@ -12,7 +12,7 @@
     "@types/pg": "^8.16.0",
     "dotenv": "^17.3.1",
     "nodemon": "^3.1.10",
-    "prisma": "^6.19.2",
+    "prisma": "^7.4.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
@@ -25,7 +25,7 @@
     "@google-apps/meet": "^0.7.1",
     "@google-cloud/local-auth": "^2.1.0",
     "@prisma/adapter-pg": "^7.4.0",
-    "@prisma/client": "^7.4.0",
+    "@prisma/client": "^7.4.1",
     "@prisma/extension-accelerate": "^3.0.1",
     "@types/cors": "^2.8.19",
     "@types/crypto-js": "^4.2.2",

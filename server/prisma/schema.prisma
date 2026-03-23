@@ -5,454 +5,533 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
-  // url = "postgresql://neondb_owner:npg_myLW8sNMDv1u@ep-odd-queen-adsik7u5.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+provider = "prisma-client"
+output = "../generated/prisma"
+url = "postgresql://neondb_owner:npg_myLW8sNMDv1u@ep-odd-queen-adsik7u5.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 }
 
 datasource db {
-  provider = "postgresql"
+provider = "postgresql"
 }
 
+// Authentication Models
 
 model Account {
-   id                 String  @id @default(cuid())
-   userId             String  @map("user_id")
-   type               String
-   provider           String
-   providerAccountId  String  @map("provider_account_id")
-   refresh_token      String? @db.Text
-   access_token       String? @db.Text
-   expires_at         DateTime?
-   token_type         String?
-   scope              String?
-   id_token           String? @db.Text
-   session_state      String?
+id String @id @default(cuid())
+userId String @map("user_id")
+type String
+provider String
+providerAccountId String @map("provider_account_id")
+password String?
+refresh_token String? @db.Text
+access_token String? @db.Text
+expires_at DateTime?
+token_type String?
+scope String?
+id_token String? @db.Text
+session_state String?
 
-   user User @relation(fields: [userId], references: [id], onDelete: Cascade)    
+user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-
-  @@unique([provider, providerAccountId])
-   @@map("accounts")
- }
+@@unique([provider, providerAccountId])
+@@map("accounts")
+}
 
 model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique @map("session_token")
-  userId       String   @map("user_id")
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
- 
-  @@map("sessions")
+id String @id @default(cuid())
+sessionToken String @unique @map("session_token")
+userId String @map("user_id")
+expiresAt DateTime
+user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+@@map("sessions")
 }
 
- model User {
-   id            String    @id @default(cuid())
-   name          String?
-   email         String?   @unique
-   emailVerified DateTime? @map("email_verified")
-   createdAt DateTime @default(now()) @map("created_at")
-   image         String?
-   isActive Boolean @default(false)
+model User {
+id String @id @default(cuid())
+name String?
+email String? @unique
+emailVerified DateTime? @map("email_verified")
+createdAt DateTime @default(now()) @map("created_at")
+image String?
 
-  password String? 
-   role         userRole    @default(student)
-   accounts      Account[]
-   sessions      Session[]
-  messages     Message[]
-  chatMembers  ChatMember[]
-  token Token?
+isActive Boolean @default(false)
 
-   @@map("users")
- }
+role userRole @default(student)
 
+accounts Account[]
+sessions Session[]
+tokens Token[]
+sender Sender?
 
-model Department {
-   id        String   @id @default(cuid())
-   name      String   @unique
-   createdAt DateTime @default(now()) @map("created_at")
-   updatedAt DateTime @updatedAt @map("updated_at")
-    courses   Course[]
-   @@map("departments")
- }
-model Course { 
-  id            String   @id @default(cuid())
-  departmentId  String   @map("department_id")
-  name          String   @unique
-  code          String   @unique
+// relations
+coursesTeaching Course[] @relation("TeacherCourses")
+enrollments Enrollment[]
+notifications Notification[]
+activities Activity[]
+tasks Task[]
+events Event[]
+assignments Assignment[]
 
-  teachersIds   String[] @map("teachers_ids")
-  studentsIds   String[] @map("students_ids")
-
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
-  chat          Chat?
-
-  department    Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-
-  @@map("courses")
+@@map("users")
 }
 
-model Chat {
-  id        String   @id @default(cuid())
-  type      chatType
-  courseId  String?  @unique @map("course_id")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  course    Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  messages  Message[]
-  chatMembers ChatMember[]
-  links     Link[]
-
-  @@map("chats")
+enum userRole {
+student
+teacher
+admin
 }
-
-
-
 
 model Token {
-  id         String   @id @default(cuid())
-  token      String?   @unique
-  type       TokenType
-  expiresAt  DateTime @map("expires_at")
+id String @id @default(cuid())
+token String? @unique
+type TokenType
+expiresAt DateTime @map("expires_at")
 
-  userId     String @unique
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+userId String @map("user_id")
+user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt  DateTime @default(now())
+createdAt DateTime @default(now()) @map("created_at")
 
-  @@map("tokens")
+@@map("tokens")
 }
 
 enum TokenType {
-  ACTIVATION
-  PASSWORD_RESET
-  EMAIL_VERIFICATION
+activation_token
+reset_token
 }
 
+// Chat Models
 
-/* todo: model the threaded request 
-model ThreadedRequest { 
-  id String @id @default(cuid())
-  courseId String @map("course_id")
-  requestedBy String @map("requested_by")
-  title String 
-  status threadStatus
-  reviewedBy String @map("reviewed_by")
-  createdAt DateTime @default(now())
+model Sender {
+id String @id @default(cuid())
+userId String @unique
+
+user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+messages Message[]
+chatMembers ChatMember[]
+pinnedBy PinnedMessage[]
+pollVotes PollVote[]
+starredMessages StarredMessage[]
+@@index([userId])
 }
-*/
+
+enum chatType {
+course
+thread
+announcement  
+}
+
+model Chat {
+id String @id @default(cuid())
+type chatType
+courseId String? @unique @map("course_id")
+imageUrl String? @map("image_url")
+
+lastMessageId String?
+lastMessage Message? @relation("LastMessage", fields: [lastMessageId], references: [id])
+
+createdAt DateTime @default(now()) @map("created_at")
+updatedAt DateTime @updatedAt @map("updated_at")
+
+course Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+messages Message[]
+chatMembers ChatMember[]
+pinnedMessages PinnedMessage[]
+links Link[]
+polls Poll[]
+
+@@map("chats")
+}
+
+model MessageReceipt {
+id String @id @default(cuid())
+
+messageId String
+chatMemberId String
+
+deliveredAt DateTime?
+readAt DateTime?
+
+message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+chatMember ChatMember @relation(fields: [chatMemberId], references: [id], onDelete: Cascade)
+
+@@unique([messageId, chatMemberId])
+@@index([messageId])
+}
 
 enum MediaType {
-  image 
-  video
-  pdf
-  text
+image
+video
+pdf
+text
 }
 
 model Message {
-  id           String     @id @default(cuid())
-  senderId     String     @map("sender_id")
-  content      String?
-  createdAt    DateTime   @default(now()) @map("created_at")
-  replyToId    String?
+id String @id @default(cuid())
+senderId String @map("sender_id")
+content String?
+createdAt DateTime @default(now()) @map("created_at")
+edited Boolean @default(false)
 
-  deliveredAt  DateTime?  @map("delivered_at")
-  readAt       DateTime?  @map("read_at")
+replyToId String?
 
-  chatId String @map("chat_id")
-  chat Chat @relation(fields: [chatId], references: [id])
-  mediaId      String?    @unique @map("media_id")
-  media        Media?     @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+chatId String @map("chat_id")
+chat Chat @relation(fields: [chatId], references: [id])
+mediaId String? @unique @map("media_id")
+deleted Boolean @default(false)
 
-  replyTo      Message?   @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: Cascade) 
-  replies      Message[]  @relation("MessageReplies") 
+media Media? @relation(fields: [mediaId], references: [id], onDelete: Cascade)
 
-  sender       User       @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  // add a edited msg field of type boolean 
-  // add a star field also... 
-  // learn cascading... 
-  
-  reactions    Reaction[]
-  @@map("messages")
+replyTo Message? @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: Cascade)
+replies Message[] @relation("MessageReplies")
+lastMessageForChats Chat[] @relation("LastMessage")
+
+sender Sender @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+pinnedMessages PinnedMessage[]
+
+starredMessages StarredMessage[]
+messageReceipts MessageReceipt[]
+
+reactions Reaction[]
+@@map("messages")
+@@index([chatId, createdAt])
 }
 
+model PinnedMessage {
+id String @id @default(cuid())
 
+chatId String
+messageId String
+pinnedById String
 
-model ChatMember { 
-  id String @id @default(cuid())
-  chatId String @map("chat_id") 
-  userId String @map("user_id") 
-  role userRole 
-  isMuted Boolean @default(false) @map("is_muted")
+pinnedAt DateTime @default(now())
 
-  joinedAt DateTime @default(now()) @map("joined_at")
-  unreadMessageCount Int @default(0) @map("unread_message_count")
-    chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
- reactions    Reaction[]
+chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+pinnedBy Sender @relation(fields: [pinnedById], references: [id], onDelete: Cascade)
 
- @@unique([chatId, userId])
-  @@map("chatMembers")
+@@unique([chatId, messageId])
+@@index([messageId])
 }
 
-model Link { 
-  id String @id @default(cuid())
+model StarredMessage {
+id String @id @default(cuid())
+senderId String
+messageId String
+createdAt DateTime @default(now())
+
+sender Sender @relation(fields: [senderId], references: [id], onDelete: Cascade)
+message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+@@unique([senderId, messageId])
+@@index([messageId])
+}
+
+model ChatMember {
+id String @id @default(cuid())
+chatId String
+senderId String
+
+isMuted Boolean @default(false)
+canSendMessages Boolean @default(true)
+
+joinedAt DateTime @default(now())
+unreadMessageCount Int @default(0)
+
+chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+sender Sender @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+reactions Reaction[]
+messageReceipts MessageReceipt[]
+
+@@unique([chatId, senderId])
+}
+
+model Poll {
+id String @id @default(cuid())
+chatId String
+question String
+createdBy String
+createdAt DateTime @default(now())
+endsAt DateTime?
+
+chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+options PollOption[]
+}
+
+model PollOption {
+id String @id @default(cuid())
+pollId String
+text String
+
+poll Poll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+votes PollVote[]
+}
+
+model PollVote {
+id String @id @default(cuid())
+optionId String
+userId String
+
+option PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+user Sender @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+@@unique([optionId, userId])
+}
+
+enum linkAssociate {
+zoomLink
+}
+
+model Link {
+id String @id @default(cuid())
 courseId String @map("course_id")
 chatId String @map("chat_id") @unique
-associate linkAssociate 
+associate linkAssociate
 createdBy String @map("created_by") // relate to teacher who created it
 startsAt DateTime? @map("starts_at")
 endsAt DateTime? @map("ends_at")
 createdAt DateTime @default(now()) @map("created_at")
 chat Chat @relation(fields: [chatId], references: [id])
 
-  @@map("links")
+@@map("links")
 }
 
 model Reaction {
-  id        String   @id @default(cuid())
-  messageId String   @map("message_id") 
-  chatMemberId    String   @map("chat_member_id") 
-  emoji     String   
+id String @id @default(cuid())
+messageId String @map("message_id")
+chatMemberId String @map("chat_member_id")
+emoji String
 
-  createdAt DateTime @default(now()) @map("created_at")
+createdAt DateTime @default(now()) @map("created_at")
 
-  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  chatMember      ChatMember     @relation(fields: [chatMemberId], references: [id], onDelete: Cascade)
+message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+chatMember ChatMember @relation(fields: [chatMemberId], references: [id], onDelete: Cascade)
 
-  @@map("reactions")
+@@map("reactions")
+@@index([messageId])
+}
+
+enum mediaAssociate {
+task
+chat
+threaded
+}
+
+enum mediaStatus {
+pending
+completed
+cancelled
 }
 
 model Media {
-  id              String      @id @default(cuid())
-  createdAt       DateTime    @default(now()) @map("created_at")
+id String @id @default(cuid())
+createdAt DateTime @default(now()) @map("created_at")
 
-  cloudinary_url  String
-  size            String
-  name            String
-  file_extension  String
-  resource_type   String
-  public_id       String
-  status          fileStatus  @default(pending)
-  associate       fileAssociate
-  message Message?
+cloudinary_url String
+size String
+name String
+file_extension String
+resource_type String
+public_id String
+status mediaStatus @default(pending)
+associate mediaAssociate
+message Message?
 
-  @@map("files")
+ /*
+  this has to be changed to something like file_associate_id, since the files are stored for different table
+ */
+assignmentId String? 
+assignment Assignment? @relation(fields: [assignmentId], references: [id])
+@@map("media")
+}
+
+// Assignemnts schema
+
+model Department {
+id String @id @default(cuid())
+name String
+code String
+createdAt DateTime @default(now())
+
+courses Course[]
+
+@@map("departments")
+}
+
+model Course {
+id String @id @default(cuid())
+title String
+code String
+description String?
+
+departmentId String
+teacherId String
+
+createdAt DateTime @default(now())
+
+department Department @relation(fields: [departmentId], references: [id])
+teacher User @relation("TeacherCourses", fields: [teacherId], references: [id])
+
+assignments Assignment[]
+enrollments Enrollment[]
+events Event[]
+activities Activity[]
+chat Chat?
+
+@@map("courses")
+}
+model Event {
+id String @id @default(cuid())
+title String
+description String?
+
+startTime DateTime
+endTime DateTime?
+
+location String?
+
+courseId String?
+
+createdBy String
+createdAt DateTime @default(now())
+
+course Course? @relation(fields: [courseId], references: [id])
+creator User @relation(fields: [createdBy], references: [id])
+
+@@map("events")
+}
+
+model Notification {
+id String @id @default(cuid())
+
+userId String
+
+title String
+message String
+
+type NotificationType @default(system)
+
+isRead Boolean @default(false)
+
+createdAt DateTime @default(now())
+
+user User @relation(fields: [userId], references: [id])
+
+@@map("notifications")
+}
+
+enum NotificationType {
+assignment
+course
+system
+}
+
+model Enrollment {
+id String @id @default(cuid())
+
+userId String
+courseId String
+
+enrolledAt DateTime @default(now())
+
+user User @relation(fields: [userId], references: [id])
+course Course @relation(fields: [courseId], references: [id])
+
+@@unique([userId, courseId])
+@@map("enrollments")
 }
 
 
-
-// Table Enums //
-
-enum userRole { 
-  student
-  staffMember
+enum AssignmentStatus {
+  draft
+  published
+  closed
 }
 
- enum fileStatus {
-  pending
-  completed
-  cancelled
+model Assignment {
+  id String @id @default(cuid())
+
+  title String
+  description String
+  instructions String?
+
+  dueDate DateTime
+
+  courseId String
+  createdBy String
+
+  priority Priority @default(low)
+  maxScore Int
+  submissionType SubmissionType 
+
+  status AssignmentStatus? 
+
+  allowLateSubmission Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attachments Media[]
+
+  course Course @relation(fields: [courseId], references: [id])
+  teacher User @relation(fields: [createdBy], references: [id])
+
+  @@map("assignments")
 }
 
-enum fileAssociate { 
-  task
-  chat 
-  threaded
+enum SubmissionType { 
+    fileUpload 
+    textEntry
+    websiteUrl
+}
+enum Priority { 
+    high 
+    medium 
+    low
 }
 
-enum linkAssociate { 
-  zoomLink 
-  other
+model Activity {
+id String @id @default(cuid())
+
+userId String
+courseId String?
+
+type ActivityType
+description String
+
+createdAt DateTime @default(now())
+
+user User @relation(fields: [userId], references: [id])
+course Course? @relation(fields: [courseId], references: [id])
+
+@@map("activities")
 }
 
-enum threadStatus { 
-  pending 
-  rejected
-  approved
+enum ActivityType {
+submission
+comment
+upload
+login
 }
 
-enum chatType { 
-  course 
-  thread 
-  dm
+model Task {
+id String @id @default(cuid())
+
+userId String
+
+title String
+dueTime DateTime?
+
+completed Boolean @default(false)
+
+createdAt DateTime @default(now())
+
+user User @relation(fields: [userId], references: [id])
+
+@@map("tasks")
 }
-
-
-/* 
-
-
-# Prisma Debugging & Setup Survival Guide (Node + ESM)
-
-## 1️⃣ Golden Rule (most important)
-
-**Do NOT customize Prisma Client output unless you absolutely must.**
-
-Let Prisma generate to its default location:
-
-```
-node_modules/@prisma/client
-```
-
-Custom output paths + ESM + tsx + Node = pain.
-
----
-
-## 2️⃣ Version sanity check (FIRST thing to do when Prisma breaks)
-
-Always make sure these two match:
-
-```bash
-npm install prisma@latest @prisma/client@latest
-```
-
-Then regenerate:
-
-```bash
-npx prisma generate
-```
-
-If Prisma behaves weirdly → **assume version mismatch first**.
-
----
-
-## 3️⃣ `schema.prisma` rules (very important)
-
-### ✅ Correct generator config
-
-```prisma
-generator client {
-  provider = "prisma-client-js"
-}
-```
-
----
-
-## 4️⃣ Datasource URL rule (this is the part you mentioned)
-
-### During initialization / migration
-
-You **MUST** have this:
-
-```prisma
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-```
-
-Prisma reads the database URL:
-
-* when running `prisma migrate`
-* when running `prisma db push`
-* when running `prisma generate`
-
-### After setup
-
-You **change or “disable” the URL**
-Prisma **always** reads it from:
-
-
----
-
-## 5️⃣ tsconfig rules for Prisma (non-negotiable)
-
-If you are running Prisma in **Node (Express, Apollo, Auth.js)**:
-
-### ✅ Use this
-
-```json
-{
-  "compilerOptions": {
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "target": "ES2023",
-    "strict": true,
-    "esModuleInterop": true
-  }
-}
-```
-
-### ❌ Do NOT use
-
-```json
-"moduleResolution": "bundler"
-```
-
-That is for **frontend bundlers**, not Node runtimes.
-
----
-
-## 6️⃣ Clean reset procedure (when things get cursed)
-
-If Prisma starts throwing:
-
-* `runtime/library not found`
-* module exists but Node can’t resolve it
-* random crashes after generation
-
-Do this **exactly in this order**:
-
-```bash
-rm -rf node_modules
-rm -rf .prisma
-rm -rf app/generated   # only if you used custom output before
-npm install
-npx prisma generate
-```
-
-This fixes 90% of Prisma issues.
-
----
-
-## 7️⃣ Runtime sanity test (fastest diagnosis)
-
-Run this:
-
-```bash
-node -e "import('@prisma/client').then(() => console.log('OK')).catch(console.error)"
-```
-
-* ✅ Prints `OK` → Prisma is fine
-* ❌ Fails → version / tsconfig / Node issue
-
----
-
-## 8️⃣ Node version warning ⚠️
-
-Prisma is **stable on Node 18 & 20**.
-
-Node 25 = bleeding edge
-Works sometimes, breaks silently sometimes.
-
-If Prisma acts haunted → downgrade Node before debugging anything else.
-
----
-
-## 9️⃣ Prisma mental model (remember this)
-
-* Prisma Client is **runtime code**, not just types
-* Node must be able to resolve it **at runtime**
-* Anything that messes with module resolution (bundler, custom output, mismatched versions) will break it
-
----
-
-## 10️⃣ TL;DR (tattoo this)
-
-> **If Prisma breaks:**
->
-> 1. Check versions
-> 2. Remove custom output
-> 3. Fix tsconfig (`NodeNext`)
-> 4. Regenerate client
-> 5. Test runtime import
-
----
-
-
-*/ 

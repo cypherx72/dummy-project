@@ -149,6 +149,14 @@
   -ms-overflow-style: none; /* IE/Edge */
 }
 
+.scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar {
+  scrollbar-width:;
+}
+
 /* Emoji Picker scrollbar */
 .emoji-wrapper .epr-body::-webkit-scrollbar {
   width: 6px;

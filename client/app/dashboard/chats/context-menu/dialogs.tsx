@@ -8,13 +8,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
+import { useChatMutations } from "@/app/hooks/chat/useChatMutations";
 import { Trash2Icon } from "lucide-react";
-import { useChatUI } from "../layout";
+import { useChatUI } from "@/context/chat/chat-context";
 
 export const DeleteDialog = () => {
-  const { openDeleteDialog, setOpenDeleteDialog } = useChatUI();
+  const {
+    openDeleteDialog,
+    setOpenDeleteDialog,
+    activeChatId,
+    contextMenuMessage,
+  } = useChatUI();
 
+  const { deleteMessage } = useChatMutations();
   return (
     <AlertDialog open={openDeleteDialog} onOpenChange={setOpenDeleteDialog}>
       <AlertDialogContent>
@@ -30,7 +36,12 @@ export const DeleteDialog = () => {
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            // onClick={}
+            onClick={() =>
+              deleteMessage({
+                chatId: activeChatId as string,
+                messageId: contextMenuMessage?.id as string,
+              })
+            }
             className="bg-red-500 hover:bg-red-500/80"
           >
             Delete

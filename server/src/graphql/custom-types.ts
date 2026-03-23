@@ -10,10 +10,10 @@ export const dateScalar = new GraphQLScalarType({
     throw Error("GraphQL Date Scalar serializer expected a `Date` object");
   },
   parseValue(value) {
-    if (typeof value === "number") {
-      return new Date(value); // Convert incoming integer to Date
+    if (typeof value === "string" || typeof value === "number") {
+      return new Date(value);
     }
-    throw new Error("GraphQL Date Scalar parser expected a `number`");
+    throw new Error("GraphQL Date Scalar parser expected a string or number");
   },
   /*
   Note: not required as of now
