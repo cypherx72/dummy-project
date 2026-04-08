@@ -2,7 +2,6 @@
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { DetailsTab } from "../components/details-tab";
@@ -10,15 +9,14 @@ import { ScheduleTab } from "../components/schedule-tab";
 import { ParticipantsTab } from "../components/participants-tab";
 
 import {
-  eventFormSchema,
-  eventFormDefaultValues,
+  EventFormDefaultValues,
+  EventFormSchema,
   EventFormValues,
 } from "../schema/schema";
-
 export default function CreateEvent() {
-  const form = useForm<z.infer<typeof eventFormSchema>>({
-    resolver: zodResolver(eventFormSchema),
-    defaultValues: eventFormDefaultValues,
+  const form = useForm<EventFormValues>({
+    resolver: zodResolver(EventFormSchema),
+    defaultValues: EventFormDefaultValues,
   });
 
   function onSubmit(values: EventFormValues) {

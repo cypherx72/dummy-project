@@ -11,7 +11,7 @@ export function TaskTab({ form }: { form: UseFormReturn<CreateTaskValues> }) {
       <TabsList variant="line">
         <TabsTrigger value="title">Title</TabsTrigger>
         <TabsTrigger value="description">Description</TabsTrigger>
-        <TabsTrigger value="comments">Comments</TabsTrigger>
+        <TabsTrigger value="instructions">Instructions</TabsTrigger>
       </TabsList>
 
       {/* Title */}
@@ -48,7 +48,7 @@ export function TaskTab({ form }: { form: UseFormReturn<CreateTaskValues> }) {
       </TabsContent>
 
       {/* Comments */}
-      <TabsContent value="comments">
+      <TabsContent value="instructions">
         <Controller
           name="comments"
           control={form.control}

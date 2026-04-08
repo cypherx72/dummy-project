@@ -14,7 +14,9 @@ enum ChatType {
 }
 
 type Course { 
+  id: ID!
   name: String!
+  title:String!
 }
 
 type Chat { 
@@ -274,15 +276,37 @@ type DashboardCourse {
   createdAt: String
 }
 
+type Submission {
+  id: ID!
+  submittedText: String
+  marksObtained: Int
+  feedback: String
+  submittedAt: String
+  status: String
+  attachments: [Media!]
+}
+
 type Assignment {
   id: ID!
   title: String!
   description: String
+  instructions: String
   dueDate: String!
+
   courseId: ID!
-  createdBy: ID!
-  createdAt: String!
-  course: DashboardCourse!
+  createdById: ID!
+
+  maxMarks: Int
+  allowLateSubmission: Boolean
+  submissionType: String
+  priority: String
+
+  postedDate: String
+  updatedAt: String
+
+  course: Course!
+  teacher: User!
+  submissions: [Submission!]!
 }
 
 type Notification {
@@ -330,6 +354,15 @@ type Task {
 }
 
 
+type GetAssignmentsResponse { 
+
+status: Int!
+  message: String!
+  code: String!
+
+   assignments: [Assignment!]!
+}
+
 type DashboardResponse {
   status: Int!
   message: String!
@@ -352,6 +385,7 @@ type Query {
   chatSummary: ChatSummaryResponse!
   chatMessages(input: chatMessagesInput! ): ChatMessagesResponse!
   GetDashboardData: DashboardResponse!
+  GetAssignments: GetAssignmentsResponse!
 
 
 }

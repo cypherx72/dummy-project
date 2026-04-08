@@ -27,7 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FilePicker } from "../../tasks/create-task/file-picker";
+import { FilePicker } from "../../tasks/create-tasks/file-picker";
+import { EventFormValues } from "../schema/schema";
 
 const EventCategory = [
   { label: "English", value: "en" },
@@ -39,7 +40,7 @@ const EventCategory = [
   { label: "Japanese", value: "ja" },
 ] as const;
 
-export function DetailsTab({ form }: { form: UseFormReturn }) {
+export function DetailsTab({ form }: { form: UseFormReturn<EventFormValues> }) {
   return (
     <TabsContent value="details">
       <FieldGroup>

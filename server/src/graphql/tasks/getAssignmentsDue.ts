@@ -30,7 +30,17 @@ export async function GetAssignments(_: any, __: any, context: contextType) {
           select: {
             id: true,
             title: true,
-            code: true,
+          },
+        },
+        teacher: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        submissions: {
+          include: {
+            attachments: true,
           },
         },
       },
@@ -40,6 +50,7 @@ export async function GetAssignments(_: any, __: any, context: contextType) {
       take: 10,
     });
 
+    console.log("Assignments: ", assignments);
     return {
       status: 200,
       message: "Assignments fetched successfully.",

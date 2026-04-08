@@ -18,8 +18,13 @@ export const TaskUIProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   // Initialize hooks
-  const { dashboardData, dashboardLoading, dashboardError, refetchDashboard } =
-    useTaskQueries({});
+  const {
+    fetchDashboardData,
+    fetchAssignments,
+    fetchAssignmentsData,
+    fetchAssignmentsError,
+    fetchAssignmentsLoading,
+  } = useTaskQueries({});
 
   const { getUploadSignature, createTask } = useTaskMutations({
     setUploadConfig,
@@ -34,16 +39,16 @@ export const TaskUIProvider = ({ children }: { children: React.ReactNode }) => {
         openEditTask,
         setOpenEditTask,
 
-        dashboardData,
-        dashboardLoading,
-        dashboardError,
-        refetchDashboard,
-
         getUploadSignature,
         uploadConfig,
         setUploadConfig,
 
         createTask,
+        fetchDashboardData,
+        fetchAssignments,
+        fetchAssignmentsData,
+        fetchAssignmentsError,
+        fetchAssignmentsLoading,
       }}
     >
       {children}

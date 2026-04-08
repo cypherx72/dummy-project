@@ -11,17 +11,12 @@ import {
 } from "../schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { SubmitHandler } from "react-hook-form";
 import { ExtendSwitch } from "./switch";
 import { useTaskUI } from "@/context/tasks/task-context";
 import { UploadUrlConfigType } from "../types-args";
 import { errorToast } from "@/components/ui/toast";
 
-export function CreateTaskForm({
-  setDrawerState,
-}: {
-  setDrawerState: React.Dispatch<React.SetStateAction<boolean>>;
-}) {
+export function CreateTaskForm() {
   const { getUploadSignature, uploadConfig, createTask } = useTaskUI();
 
   const courseId = "Data Structures";
@@ -29,18 +24,17 @@ export function CreateTaskForm({
   const form = useForm<CreateTaskValues>({
     resolver: zodResolver(CreateTaskSchema),
     defaultValues: {
-      courseId,
-      time: "00:00:00",
-      extendDate: false,
       title: "",
-      priorityStatus: "low",
-      maxPoints: 20,
-      submissionType: "fileUpload",
-      dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
       description: "",
       instructions: "",
+      dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      time: "00:00:00",
+      courseId,
+      maxPoints: 20,
+      extendDate: false,
+      priorityStatus: "low",
+      submissionType: "fileUpload",
       attachments: [],
-
       comments: "",
     },
   });
@@ -108,8 +102,6 @@ export function CreateTaskForm({
         input: data,
       },
     });
-
-    setDrawerState(false);
   };
   //
 

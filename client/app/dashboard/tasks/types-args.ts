@@ -8,16 +8,16 @@ export type TaskUIContextType = {
   openEditTask: boolean;
   setOpenEditTask: (v: boolean) => void;
 
-  dashboardData?: any;
-  dashboardLoading: boolean;
-  dashboardError?: any;
-  refetchDashboard: any;
-
   getUploadSignature: any;
   uploadConfig: any;
   setUploadConfig: any;
-
+  fetchDashboardData: any;
   createTask: any;
+  fetchAssignments: any;
+
+  fetchAssignmentsData: any;
+  fetchAssignmentsError: any;
+  fetchAssignmentsLoading: any;
 };
 
 export type UploadUrlConfigType = {

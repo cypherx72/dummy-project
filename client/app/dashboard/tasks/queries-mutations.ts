@@ -56,6 +56,61 @@ export const FETCH_DASHBOARD_DATA = gql`
     }
   }
 `;
+export const FETCH_ASSIGNMENTS_DATA = gql`
+  query GetAssignments {
+    GetAssignments {
+      status
+      message
+      code
+
+      assignments {
+        id
+        title
+        description
+        dueDate
+        
+        maxMarks
+        submissionType
+        priority
+
+        postedDate
+        updatedAt
+
+        course {
+          id
+          title
+        }
+
+        teacher {
+          id
+          name
+        }
+
+        submissions {
+          id
+          status
+          submittedAt
+          feedback
+          submittedText
+          marksObtained
+
+          attachments {
+            id
+            cloudinary_url
+            size
+            name
+            file_extension
+            resource_type
+            public_id
+            status
+            associate
+            createdAt
+          }
+        }
+      }
+    }
+  }
+`;
 
 export const CREATE_TASK = gql`
   mutation CreateTask($input: CreateTaskInput!) {

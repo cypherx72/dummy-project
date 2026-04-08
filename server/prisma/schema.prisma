@@ -70,6 +70,7 @@ enrollments Enrollment[]
 notifications Notification[]
 activities Activity[]
 tasks Task[]
+submission Submission[]
 events Event[]
 assignments Assignment[]
 
@@ -333,7 +334,7 @@ id String @id @default(cuid())
 createdAt DateTime @default(now()) @map("created_at")
 
 cloudinary_url String
-size String
+bytes Int
 name String
 file_extension String
 resource_type String
@@ -342,10 +343,13 @@ status mediaStatus @default(pending)
 associate mediaAssociate
 message Message?
 
+
  /*
   this has to be changed to something like file_associate_id, since the files are stored for different table
  */
 assignmentId String? 
+submissionId String?
+submission Submission? @relation(fields: [submissionId], references: [id])
 assignment Assignment? @relation(fields: [assignmentId], references: [id])
 @@map("media")
 }
@@ -365,7 +369,7 @@ courses Course[]
 
 model Course {
 id String @id @default(cuid())
-title String
+name String
 code String
 description String?
 
@@ -447,10 +451,29 @@ course Course @relation(fields: [courseId], references: [id])
 }
 
 
-enum AssignmentStatus {
-  draft
-  published
-  closed
+enum SubmissionStatus {
+  graded 
+  submitted
+  pending
+  missed
+  late
+}
+model Submission {
+  id           String           @id @default(cuid())
+  submittedText String?
+  marksObtained Int?
+  feedback String?
+  submittedAt  DateTime         @default(now())
+  status       SubmissionStatus @default(pending)
+
+  assignmentId String
+  submittedById String
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id])
+  student    User       @relation(fields: [submittedById], references: [id])
+  attachments Media[]
+
+  @@map("submissions")
 }
 
 model Assignment {
@@ -459,27 +482,24 @@ model Assignment {
   title String
   description String
   instructions String?
-
+  
   dueDate DateTime
-
   courseId String
-  createdBy String
+  createdById String
 
-  priority Priority @default(low)
-  maxScore Int
-  submissionType SubmissionType 
-
-  status AssignmentStatus? 
-
+  maxMarks Int
   allowLateSubmission Boolean @default(false)
 
-  createdAt DateTime @default(now())
+  submissionType SubmissionType 
+  priority Priority @default(low)
+
+  postedDate DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   attachments Media[]
-
+  submissions Submission[]
   course Course @relation(fields: [courseId], references: [id])
-  teacher User @relation(fields: [createdBy], references: [id])
+  teacher User @relation(fields: [createdById], references: [id])
 
   @@map("assignments")
 }

@@ -25,28 +25,27 @@ const SignInSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-export const AuthSchema = z
-  .object({
-    email: z.string().regex(/^\d{8}@vupune\.ac\.in$/, {
-      message: "Enter a valid university email",
-    }),
+export const AuthSchema = z.object({
+  email: z.string().regex(/^\d{8}@vupune\.ac\.in$/, {
+    message: "Enter a valid university email",
+  }),
 
-    password: z
-      .string()
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[~`!@#$%^&*()_+-=\[\]\\{}|;':",.<>\/?]).{8,}$/,
-        {
-          message:
-            "Password must contain uppercase, lowercase, number, and special character.",
-        },
-      ),
+  password: z
+    .string()
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[~`!@#$%^&*()_+-=\[\]\\{}|;':",.<>\/?]).{8,}$/,
+      {
+        message:
+          "Password must contain uppercase, lowercase, number, and special character.",
+      },
+    ),
 
-    "confirm-password": z.string(),
-  })
-  .refine((data) => data.password === data["confirm-password"], {
-    message: "Passwords do not match.",
-    path: ["confirm-password"],
-  });
+  "confirm-password": z.string(),
+});
+// .refine((data) => data.password === data["confirm-password"], {
+//   message: "Passwords do not match.",
+//   path: ["confirm-password"],
+// });
 
 const EmailSchema = AuthSchema.pick({ email: true });
 const FormSchema = AuthSchema;

@@ -47,10 +47,9 @@ export async function CreateTask(
         instructions: data.instructions,
         dueDate: new Date(data.dueDate),
         courseId: "1",
-        createdBy: user.id,
-        maxScore: data.maxPoints,
+        createdById: user.id,
+        maxMarks: data.maxPoints,
         submissionType: data.submissionType,
-        status: "draft",
       },
     });
 
