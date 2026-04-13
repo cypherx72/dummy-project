@@ -1,12 +1,10 @@
 import { GraphQLCustomLError } from "../../lib/error.js";
 import { GraphQLError } from "graphql";
 import { type contextType } from "../../lib/types.js";
+import { requireAuth } from "../../lib/guards.js";
 
 type CursorPaginationArgs = {
-  input: {
-    myCursor: string;
-    chatId: string;
-  };
+  input: { myCursor: string; chatId: string };
 };
 
 export async function CursorPagination(
@@ -14,48 +12,33 @@ export async function CursorPagination(
   { input }: CursorPaginationArgs,
   context: contextType,
 ) {
-  const { prisma, req } = context;
+  const { prisma, currentUser } = context;
+  const user = requireAuth(currentUser);
   const { myCursor, chatId } = input;
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      include: { sender: true },
+    const sender = await prisma.sender.findUnique({
+      where: { userId: user.id },
     });
 
-    if (!user || !user.sender) {
-      throw new GraphQLError("Unauthorized");
-    }
+    if (!sender) throw new GraphQLError("Unauthorized");
 
     const chat = await prisma.chat.findFirst({
       where: {
         id: chatId,
-        chatMembers: {
-          some: {
-            senderId: user.sender.id, // ensure user is member
-          },
-        },
+        chatMembers: { some: { senderId: sender.id } },
       },
       select: {
         id: true,
         chatMembers: {
-          where: {
-            senderId: user.sender.id,
-          },
-          select: {
-            unreadMessageCount: true,
-          },
+          where: { senderId: sender.id },
+          select: { unreadMessageCount: true },
           take: 1,
         },
         messages: {
           take: 30,
-          ...(myCursor && {
-            skip: 1,
-            cursor: { id: myCursor },
-          }),
-          orderBy: {
-            createdAt: "desc",
-          },
+          ...(myCursor && { skip: 1, cursor: { id: myCursor } }),
+          orderBy: { createdAt: "desc" },
           select: {
             id: true,
             content: true,
@@ -68,24 +51,13 @@ export async function CursorPagination(
             media: true,
             starredMessages: true,
             pinnedMessages: {
-              select: {
-                id: true,
-                messageId: true,
-                pinnedById: true,
-                pinnedAt: true,
-              },
+              select: { id: true, messageId: true, pinnedById: true, pinnedAt: true },
             },
             sender: {
               select: {
                 id: true,
                 user: {
-                  select: {
-                    id: true,
-                    name: true,
-                    image: true,
-                    role: true,
-                    email: true,
-                  },
+                  select: { id: true, name: true, image: true, role: true, email: true },
                 },
               },
             },
@@ -94,12 +66,9 @@ export async function CursorPagination(
       },
     });
 
-    if (!chat) {
-      throw new GraphQLError("Chat not found or unauthorized");
-    }
+    if (!chat) throw new GraphQLError("Chat not found or unauthorized");
 
     const messages = chat.messages.reverse();
-    console.log(chat);
 
     return {
       chatId: chat.id,

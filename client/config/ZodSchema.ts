@@ -1,5 +1,96 @@
 import { z } from "zod";
 
+export const allowedTypes = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+];
+
+export const urlSchema = z
+  .string()
+  .url("Enter a valid URL (e.g. https://github.com/you/repo).")
+  .max(500, "URL is too long.");
+
+export const textSchema = z
+  .string()
+  .min(10, "Response must be at least 10 characters.")
+  .max(2000, "Cannot exceed 2000 characters.");
+
+export const FileSchema = z
+  .instanceof(File)
+  .refine((file) => (allowedTypes as string[]).includes(file.type), {
+    message: "Unsupported file type",
+  })
+  .refine((file) => file.size <= 10 * 1024 * 1024, {
+    message: "File must be smaller than 10MB",
+  });
+
+export const AssignmentSchema = z
+  .object({
+    submissionType: z.enum(["fileUpload", "textEntry", "websiteUrl"]),
+    attachments: z.any().optional(),
+    text: z.string().optional(),
+    url: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.submissionType === "fileUpload") {
+      const fileResult = FileSchema.safeParse(data.attachments);
+
+      if (!fileResult.success) {
+        const tree = z.treeifyError(fileResult.error);
+
+        // ❌ Multiple addIssue calls to the same path = RHF only keeps the last
+        // ✅ One issue, all messages collected together
+        ctx.addIssue({
+          code: "custom",
+          path: ["file"],
+          message: tree.errors.join(", "), // for fieldState.error.message
+          params: {
+            messages: tree.errors, // for fieldState.error.types if you want the array
+          },
+        });
+      }
+    }
+
+    if (data.submissionType === "textEntry") {
+      const textResult = textSchema.safeParse(data.text);
+      if (!textResult.success) {
+        const tree = z.treeifyError(textResult.error);
+
+        tree.errors.map((err) => {
+          console.log(err);
+          ctx.addIssue({
+            code: "custom",
+            message: err,
+            path: ["text"],
+          });
+        });
+      }
+    }
+
+    if (data.submissionType === "websiteUrl") {
+      const urlResult = urlSchema.safeParse(data.url);
+      if (!urlResult.success) {
+        const tree = z.treeifyError(urlResult.error);
+
+        tree.errors.map((err) => {
+          console.log(err);
+          ctx.addIssue({
+            code: "custom",
+            message: err,
+            path: ["url"],
+          });
+        });
+      }
+    }
+  });
+
+export type AssignmentFormValues = z.infer<typeof AssignmentSchema>;
+
 // Schemas for SignIn form
 export const SignInSchema = z.object({
   email: z.string().regex(/^\d{8}@vupune\.ac\.in$/, {
@@ -69,31 +160,31 @@ const ACCEPTED_MIME_TYPES = [
   "application/pdf",
 ];
 
-export const fileSchema = z
-  .any()
-  .refine(
-    (f) => f instanceof File,
+// export const fileSchema = z
+//   .any()
+//   .refine(
+//     (f) => f instanceof File,
 
-    {
-      message: "No file provided.",
-    },
-  )
-  .refine(
-    (file) => file.size <= MAX_FILE_SIZE,
+//     {
+//       message: "No file provided.",
+//     },
+//   )
+//   .refine(
+//     (file) => file.size <= MAX_FILE_SIZE,
 
-    {
-      message: `The file is too large. Max size is ${
-        MAX_FILE_SIZE / (1024 * 1024)
-      }MB.`,
-    },
-  )
-  .refine(
-    (file) => ACCEPTED_MIME_TYPES.includes(file.type),
+//     {
+//       message: `The file is too large. Max size is ${
+//         MAX_FILE_SIZE / (1024 * 1024)
+//       }MB.`,
+//     },
+//   )
+//   .refine(
+//     (file) => ACCEPTED_MIME_TYPES.includes(file.type),
 
-    {
-      message: "Only JPEG, PNG, WebP images or PDF files are allowed.",
-    },
-  );
+//     {
+//       message: "Only JPEG, PNG, WebP images or PDF files are allowed.",
+//     },
+//   );
 
 export const MediaSchema = z
   .any()
@@ -121,4 +212,4 @@ export const MediaSchema = z
     },
   );
 
-export type ValidatedFile = z.infer<typeof fileSchema>;
+// export type ValidatedFile = z.infer<typeof fileSchema>;

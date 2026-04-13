@@ -1,25 +1,36 @@
 import { GraphQLCustomLError } from "../../lib/error.js";
 import { GraphQLError } from "graphql";
 import { type contextType } from "../../lib/types.js";
-import { CreateTaskSchema, type CreateTaskValues } from "./schema.js";
+import {
+  SubmitAssignmentSchema,
+  type SubmitAssignmentFormValues,
+} from "../../lib/ZodSchema.js";
 import { requireAuth, requireRole } from "../../lib/guards.js";
 
-export async function CreateTask(
+export async function SubmitAssignment(
   _: unknown,
-  { input }: { input: CreateTaskValues },
+  { input }: { input: SubmitAssignmentFormValues },
   context: contextType,
 ) {
   const { prisma, currentUser } = context;
-  const user = requireAuth(currentUser);
-  requireRole(user, "teacher", "admin");
 
+  const user = requireAuth(currentUser);
+  requireRole(user, "student");
+
+  console.log("user", user, "received the following data: ", input);
   // Validate input
-  const { success, data, error } = CreateTaskSchema.safeParse({ ...input });
+  const { success, data, error } = SubmitAssignmentSchema.safeParse({
+    submissionType: {
+      fileUpload: input.attachments,
+      textEntry: input.textEntry,
+      websiteUrl: input.websiteUrl,
+    },
+  });
 
   if (!success) {
     console.log(error);
     throw GraphQLCustomLError({
-      message: "Failed to validate task data.",
+      message: "Failed to validate assignment data.",
       status: 400,
       code: "VALIDATION_ERROR",
     });
@@ -28,19 +39,9 @@ export async function CreateTask(
   console.log(data);
 
   try {
-    const assignment = await prisma.assignment.create({
-      data: {
-        title: data.title,
-        description: data.description,
-        instructions: data.instructions,
-        dueDate: new Date(data.dueDate),
-        courseId: "1",
-        createdById: user.id,
-        maxMarks: data.maxPoints,
-        submissionType: data.submissionType,
-      },
-    });
+    // create a submission
 
+    // upload assignments if any
     if (data.attachments && data.attachments.length > 0) {
       await prisma.media.createMany({
         data: data.attachments.map((file) => ({
@@ -58,15 +59,15 @@ export async function CreateTask(
 
     return {
       status: 200,
-      message: "Task created successfully.",
-      code: "TASK_CREATED",
+      message: "Assignment submitted successfully.",
+      code: "ASSIGNMENT_SUBMITTED_SUCCESSFULLY",
     };
   } catch (err) {
     if (err instanceof GraphQLError) throw err;
 
     console.log(err);
     throw GraphQLCustomLError({
-      message: "We couldn't create the task. Please try again later.",
+      message: "We couldn't submit the assignment. Please try again later.",
       status: 500,
       code: "SERVER_ERROR",
     });

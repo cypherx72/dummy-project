@@ -1,13 +1,10 @@
 import { GraphQLCustomLError } from "../../lib/error.js";
 import { GraphQLError } from "graphql";
 import { type contextType } from "../../lib/types.js";
+import { requireAuth } from "../../lib/guards.js";
 
 type sendReactionArgs = {
-  input: {
-    messageId: string;
-    emoji: string;
-    chatId: string;
-  };
+  input: { messageId: string; emoji: string; chatId: string };
 };
 
 export async function SendReaction(
@@ -15,44 +12,28 @@ export async function SendReaction(
   { input }: sendReactionArgs,
   context: contextType,
 ) {
-  const { prisma, io, req } = context;
+  const { prisma, io, currentUser } = context;
+  const user = requireAuth(currentUser);
   const { emoji, messageId, chatId } = input;
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      include: { sender: true },
+    const sender = await prisma.sender.findUnique({
+      where: { userId: user.id },
     });
+
+    if (!sender) throw new GraphQLError("Unauthorized");
 
     const chatMember = await prisma.chatMember.findUnique({
-      where: {
-        chatId_senderId: {
-          chatId,
-          senderId: user.sender.id,
-        },
-      },
+      where: { chatId_senderId: { chatId, senderId: sender.id } },
     });
 
-    if (!chatMember) {
-      throw new GraphQLError("Unauthorized");
-    }
+    if (!chatMember) throw new GraphQLError("Unauthorized");
 
-    //Save reaction
     const reaction = await prisma.reaction.create({
-      data: {
-        messageId,
-        chatMemberId: chatMember.id,
-        emoji,
-      },
+      data: { messageId, chatMemberId: chatMember.id, emoji },
     });
 
-    const reactionPayload = {
-      chatId,
-      messageId,
-      ...reaction,
-    };
-
-    io.to(`chat:${chatId}`).emit("reaction:new", reactionPayload);
+    io.to(`chat:${chatId}`).emit("reaction:new", { chatId, messageId, ...reaction });
 
     return {
       status: 200,
@@ -60,14 +41,10 @@ export async function SendReaction(
       code: "REACTION_SENT",
     };
   } catch (err) {
-    if (err instanceof GraphQLError) {
-      console.log(err);
-      throw err;
-    }
+    if (err instanceof GraphQLError) throw err;
 
     throw GraphQLCustomLError({
-      message:
-        "We couldn't activate your account. Please try again later. If this error persists, please contact our **support team**.",
+      message: "We couldn't send the reaction. Please try again later.",
       status: 500,
       code: "SERVER_ERROR",
     });

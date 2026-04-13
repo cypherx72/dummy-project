@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TaskUIContext } from "./task-context";
 import { useTaskQueries } from "@/app/hooks/tasks/useTaskQueries";
 import { useTaskMutations } from "@/app/hooks/tasks/useTaskMutations";
@@ -20,15 +20,27 @@ export const TaskUIProvider = ({ children }: { children: React.ReactNode }) => {
   // Initialize hooks
   const {
     fetchDashboardData,
+    dashboardData,
+    dashboardLoading,
+    dashboardError,
     fetchAssignments,
     fetchAssignmentsData,
     fetchAssignmentsError,
     fetchAssignmentsLoading,
   } = useTaskQueries({});
 
-  const { getUploadSignature, createTask } = useTaskMutations({
+  const {
+    getUploadSignature,
+    createTask,
+    getUploadSignatureData,
+    submitAssignment,
+    submitAssignmentError,
+    submitAssignmentLoading,
+    submitAssignmentResponse,
+  } = useTaskMutations({
     setUploadConfig,
   });
+
   return (
     <TaskUIContext
       value={{
@@ -40,15 +52,24 @@ export const TaskUIProvider = ({ children }: { children: React.ReactNode }) => {
         setOpenEditTask,
 
         getUploadSignature,
+        getUploadSignatureData,
         uploadConfig,
         setUploadConfig,
 
         createTask,
         fetchDashboardData,
+        dashboardData,
+        dashboardLoading,
+        dashboardError,
         fetchAssignments,
         fetchAssignmentsData,
         fetchAssignmentsError,
         fetchAssignmentsLoading,
+
+        submitAssignment,
+        submitAssignmentError,
+        submitAssignmentLoading,
+        submitAssignmentResponse,
       }}
     >
       {children}

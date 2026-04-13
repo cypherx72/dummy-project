@@ -9,6 +9,7 @@ export type TaskUIContextType = {
   setOpenEditTask: (v: boolean) => void;
 
   getUploadSignature: any;
+  getUploadSignatureData: any;
   uploadConfig: any;
   setUploadConfig: any;
   fetchDashboardData: any;
@@ -18,6 +19,14 @@ export type TaskUIContextType = {
   fetchAssignmentsData: any;
   fetchAssignmentsError: any;
   fetchAssignmentsLoading: any;
+
+  dashboardData: any;
+  dashboardLoading: boolean;
+  dashboardError: any;
+  submitAssignment: any;
+  submitAssignmentError: any;
+  submitAssignmentLoading: any;
+  submitAssignmentResponse: any;
 };
 
 export type UploadUrlConfigType = {
@@ -28,6 +37,8 @@ export type UploadUrlConfigType = {
   folder: string;
 };
 
-export type GetUploadSignature = {
-  GetUploadSignature: UploadUrlConfigType;
+export type GetUploadSignatureResponse = {
+  data: {
+    GetUploadSignature: UploadUrlConfigType;
+  };
 };

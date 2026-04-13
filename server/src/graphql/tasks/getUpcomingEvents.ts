@@ -1,30 +1,20 @@
 import { GraphQLCustomLError } from "../../lib/error.js";
 import { GraphQLError } from "graphql";
 import { type contextType } from "../../lib/types.js";
+import { requireAuth } from "../../lib/guards.js";
 
 export async function GetUpcomingEvents(_: any, __: any, context: contextType) {
-  const { prisma, req } = context;
+  const { prisma, currentUser } = context;
+  requireAuth(currentUser);
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-    });
-
-    if (!user) {
-      throw new GraphQLError("User not found");
-    }
-
     const now = new Date();
-    console.log(now);
+
     const events = await prisma.event.findMany({
       where: {
-        startTime: {
-          gte: now,
-        },
+        startTime: { gte: now },
       },
-      orderBy: {
-        startTime: "asc",
-      },
+      orderBy: { startTime: "asc" },
       take: 10,
     });
 
@@ -32,12 +22,15 @@ export async function GetUpcomingEvents(_: any, __: any, context: contextType) {
       status: 200,
       message: "Events fetched successfully.",
       code: "EVENTS_FETCHED",
-      events,
+      events: events.map((e) => ({
+        ...e,
+        startDate: e.startTime.toISOString(),
+        startTime: e.startTime.toISOString(),
+      })),
     };
   } catch (err) {
-    if (err instanceof GraphQLError) {
-      throw err;
-    }
+    console.log(err);
+    if (err instanceof GraphQLError) throw err;
 
     throw GraphQLCustomLError({
       message: "We couldn't fetch upcoming events. Please try again later.",

@@ -9,7 +9,7 @@ export const FETCH_DASHBOARD_DATA = gql`
 
       courses {
         id
-        title
+        name
         code
         createdAt
       }
@@ -20,7 +20,7 @@ export const FETCH_DASHBOARD_DATA = gql`
         dueDate
         course {
           id
-          title
+          name
         }
       }
 
@@ -45,6 +45,15 @@ export const FETCH_DASHBOARD_DATA = gql`
         type
         activity
         createdAt
+        user {
+          id
+          name
+        }
+        course {
+          id
+          name
+          code
+        }
       }
 
       tasks {
@@ -68,7 +77,7 @@ export const FETCH_ASSIGNMENTS_DATA = gql`
         title
         description
         dueDate
-        
+
         maxMarks
         submissionType
         priority
@@ -78,7 +87,7 @@ export const FETCH_ASSIGNMENTS_DATA = gql`
 
         course {
           id
-          title
+          name
         }
 
         teacher {
@@ -115,6 +124,16 @@ export const FETCH_ASSIGNMENTS_DATA = gql`
 export const CREATE_TASK = gql`
   mutation CreateTask($input: CreateTaskInput!) {
     CreateTask(input: $input) {
+      code
+      message
+      status
+    }
+  }
+`;
+
+export const SUBMIT_ASSIGNMENT = gql`
+  mutation SubmitAssignment($input: SubmitAssignmentInput!) {
+    SubmitAssignment(input: $input) {
       code
       message
       status

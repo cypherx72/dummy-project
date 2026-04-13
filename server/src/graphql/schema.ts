@@ -16,7 +16,7 @@ enum ChatType {
 type Course { 
   id: ID!
   name: String!
-  title:String!
+  code: String
 }
 
 type Chat { 
@@ -236,6 +236,14 @@ fileExtension: String!
 
 }
   
+
+input SubmitAssignmentInput { 
+   attachments: [AttachmentInput]
+   textEntry: String
+   websiteUrl: String
+}
+
+
 input CreateTaskInput{ 
   courseId: String!
     time: String!
@@ -268,7 +276,7 @@ websiteUrl }
 
 type DashboardCourse {
   id: ID!
-  title: String!
+  name: String!
   code: String!
   description: String
   departmentId: ID
@@ -324,16 +332,30 @@ type Event {
   title: String!
   location: String
   startDate: String!
+  startTime: String!
+}
+
+type ActivityUser {
+  id: String!
+  name: String
+}
+
+type ActivityCourse {
+  id: String!
+  name: String!
+  code: String!
 }
 
 type RecentActivity {
   id: ID!
-  activity: String!
+  activity: String
   userId: ID!
   description: String!
   type: String!
   courseId: ID
   createdAt: String!
+  user: ActivityUser
+  course: ActivityCourse
 }
 
 type UploadSignatureResponse { 
@@ -377,6 +399,94 @@ type DashboardResponse {
 }
 
 #########################
+# ENROLLMENT TYPES
+#########################
+
+type Department {
+  id: ID!
+  name: String!
+  code: String!
+  createdAt: String!
+  courses: [EnrollmentCourse!]!
+}
+
+# Full course shape used in enrollment queries (richer than DashboardCourse)
+type EnrollmentCourse {
+  id: ID!
+  name: String!
+  code: String!
+  description: String
+  departmentId: ID!
+  teacherId: ID!
+  createdAt: String!
+  department: Department
+  teacher: EnrollmentUser!
+  enrolledStudents: [EnrollmentRecord!]!
+  enrolledCount: Int!
+}
+
+type EnrollmentUser {
+  id: ID!
+  name: String
+  email: String
+  image: String
+  role: UserRole!
+}
+
+type EnrollmentRecord {
+  id: ID!
+  enrolledAt: String!
+  user: EnrollmentUser!
+}
+
+input EnrollStudentInput {
+  courseId: String!
+  # Optional: admins/teachers can enroll another user by id.
+  # If omitted, the current user enrolls themselves (student flow).
+  userId: String
+}
+
+input UnenrollStudentInput {
+  courseId: String!
+  userId: String
+}
+
+type EnrollmentResponse {
+  status: Int!
+  message: String!
+  code: String!
+  enrollment: EnrollmentRecord
+}
+
+type GetDepartmentsResponse {
+  status: Int!
+  message: String!
+  code: String!
+  departments: [Department!]!
+}
+
+type GetCourseResponse {
+  status: Int!
+  message: String!
+  code: String!
+  course: EnrollmentCourse
+}
+
+type GetEnrolledStudentsResponse {
+  status: Int!
+  message: String!
+  code: String!
+  enrollments: [EnrollmentRecord!]!
+}
+
+type GetTeacherCoursesResponse {
+  status: Int!
+  message: String!
+  code: String!
+  courses: [EnrollmentCourse!]!
+}
+
+#########################
 # ROOT TYPES
 #########################
 
@@ -387,7 +497,11 @@ type Query {
   GetDashboardData: DashboardResponse!
   GetAssignments: GetAssignmentsResponse!
 
-
+  # Enrollment queries
+  GetDepartments: GetDepartmentsResponse!
+  GetCourseById(id: ID!): GetCourseResponse!
+  GetTeacherCourses: GetTeacherCoursesResponse!
+  GetEnrolledStudents(courseId: ID!): GetEnrolledStudentsResponse!
 }
 
 type Mutation {
@@ -400,8 +514,12 @@ type Mutation {
   SendReaction(input: SendReactionInput! ): DefaultResponse!
   MarkChatAsRead(input: MarkChatAsReadInput!): MarkChatAsReadResponse!
 
-  
   GetUploadSignature: UploadSignatureResponse!
   CreateTask(input: CreateTaskInput!): DefaultResponse!
+  SubmitAssignment(input: SubmitAssignmentInput!): DefaultResponse!
+
+  # Enrollment mutations
+  EnrollStudent(input: EnrollStudentInput!): EnrollmentResponse!
+  UnenrollStudent(input: UnenrollStudentInput!): DefaultResponse!
 }
 `;

@@ -8,8 +8,15 @@ import { RecentActivityTable } from "./recent-activity-tab";
 import TodaysTasks from "./today-task";
 import CalendarEvents from "./calendar-events";
 import UserCard from "./user-card";
+import { useTaskUI } from "@/context/tasks/task-context";
+import { useEffect } from "react";
 
 export default function CardImage() {
+  const { fetchDashboardData } = useTaskUI();
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
   return (
     <main className="flex flex-col justify-end items-end gap-4 p-3 w-full font-sans">
       <div className="flex flex-row justify-between items-start gap-4 p-2 border-1 rounded-md w-full h-[50vh] overflow-hidden">

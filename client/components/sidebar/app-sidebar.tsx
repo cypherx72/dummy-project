@@ -11,13 +11,11 @@ import { IoChatbubbles } from "react-icons/io5";
 import { GrNotes } from "react-icons/gr";
 import { BsSendFill } from "react-icons/bs";
 import { MdContactSupport } from "react-icons/md";
+import { BookOpen, GraduationCap } from "lucide-react";
 import { NavMain } from "./nav-main";
 import { NavProjects } from "./nav-projects";
 import { NavSecondary } from "./nav-secondary";
-import { NavUser } from "./nav-user";
 import { useSidebar } from "@/components/ui/sidebar";
-import { redirect } from "next/navigation";
-import { useSession } from "next-auth/react";
 import {
   Sidebar,
   SidebarContent,
@@ -26,91 +24,88 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Card } from "../ui/card";
+import { useSession } from "@/context/session-context";
 
-const data = {
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "#",
-      icon: TbLayoutDashboardFilled,
-      isActive: true,
-    },
-    {
-      title: "Schedule",
-      url: "#",
-      icon: AiFillSchedule,
-    },
-    {
-      title: "Tasks",
-      url: "/tasks",
-      icon: GrTasks,
-    },
-    {
-      title: "Reports",
-      url: "#",
-      icon: TbReportAnalytics,
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: IoSettings,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Support",
-      url: "#",
-      icon: MdContactSupport,
-    },
-    {
-      title: "Feedback",
-      url: "#",
-      icon: BsSendFill,
-    },
-  ],
-  projects: [
-    {
-      name: "Chats",
-      url: "/chats",
-      icon: IoChatbubbles,
-    },
-    {
-      name: "Notes & AI",
-      url: "#",
-      icon: GrNotes,
-    },
-  ],
-};
+const sharedNav = [
+  {
+    title: "Dashboard",
+    url: "#",
+    icon: TbLayoutDashboardFilled,
+    isActive: true,
+  },
+  {
+    title: "Schedule",
+    url: "#",
+    icon: AiFillSchedule,
+  },
+  {
+    title: "Tasks",
+    url: "/dashboard/tasks",
+    icon: GrTasks,
+  },
+  {
+    title: "Reports",
+    url: "#",
+    icon: TbReportAnalytics,
+  },
+  {
+    title: "Settings",
+    url: "#",
+    icon: IoSettings,
+    items: [
+      { title: "General", url: "#" },
+      { title: "Team", url: "#" },
+      { title: "Billing", url: "#" },
+      { title: "Limits", url: "#" },
+    ],
+  },
+];
+
+// Teacher / admin only
+const teacherNav = [
+  {
+    title: "Courses",
+    url: "/dashboard/course-management",
+    icon: BookOpen,
+  },
+];
+
+// Student only
+const studentNav = [
+  {
+    title: "My Courses",
+    url: "/dashboard/my-courses",
+    icon: GraduationCap,
+  },
+];
+
+const navSecondary = [
+  { title: "Support", url: "#", icon: MdContactSupport },
+  { title: "Feedback", url: "#", icon: BsSendFill },
+];
+
+const projects = [
+  { name: "Chats", url: "/dashboard/chats", icon: IoChatbubbles },
+  { name: "Notes & AI", url: "#", icon: GrNotes },
+];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { open } = useSidebar();
-  // const { data: session } = useSession();
+  const { user } = useSession();
 
-  // const user = {
-  //   email: session?.user?.email as string,
-  //   avatar: session?.user?.image as string,
-  //   name: session?.user?.name as string,
-  // };
+  const roleNav =
+    user?.role === "student"
+      ? studentNav
+      : user?.role === "teacher" || user?.role === "admin"
+        ? teacherNav
+        : [];
 
-  // if (!session) redirect("auth/login");
+  // Insert role-specific nav after Tasks (index 2)
+  const navMain = [
+    ...sharedNav.slice(0, 3),
+    ...roleNav,
+    ...sharedNav.slice(3),
+  ];
 
   return (
     <Sidebar variant="inset" {...props} collapsible="icon">
@@ -124,16 +119,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <p className="font-serif font-bold"> Circle Space </p>
             </div>
           )}
-
           <SidebarTrigger />
         </div>
       </SidebarHeader>
       <SidebarContent className="font-bold">
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavMain items={navMain} />
+        <NavProjects projects={projects} />
+        <NavSecondary items={navSecondary} className="mt-auto" />
       </SidebarContent>
-      <SidebarFooter>{/* <NavUser user={us  er} /> */}</SidebarFooter>
+      <SidebarFooter />
     </Sidebar>
   );
 }

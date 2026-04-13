@@ -1,6 +1,7 @@
 import { GraphQLCustomLError } from "../../lib/error.js";
 import { GraphQLError } from "graphql";
 import { type contextType } from "../../lib/types.js";
+import { requireAuth } from "../../lib/guards.js";
 
 type LastMessage = {
   content: string;
@@ -13,48 +14,36 @@ type ChatSummary = {
     id: string;
     lastMessage: null | LastMessage;
     imageUrl: string;
-    course: {
-      name: string;
-    };
+    course: { name: string };
   };
   unreadMessageCount: string;
 };
 
 export async function chatSummary(_: any, __: any, context: contextType) {
-  const { prisma, req } = context;
+  const { prisma, currentUser } = context;
+  const user = requireAuth(currentUser);
 
-  // check if user does exist
-  const user = await prisma.user.findUnique({
-    where: { id: req.user.id },
-    include: { sender: true },
-  });
-
-  if (!user) {
-  }
-
-  // query to fetch chatPreview data
   try {
+    // Get sender record for this user (needed for chatMember lookup)
+    const sender = await prisma.sender.findUnique({
+      where: { userId: user.id },
+    });
+
+    if (!sender) {
+      throw new GraphQLError("Sender profile not found");
+    }
+
     const chats = await prisma.chatMember.findMany({
-      where: {
-        senderId: user.sender.id,
-      },
-
+      where: { senderId: sender.id },
       orderBy: {
-        chat: {
-          lastMessage: {
-            createdAt: "desc",
-          },
-        },
+        chat: { lastMessage: { createdAt: "desc" } },
       },
-
       select: {
         unreadMessageCount: true,
         chat: {
           select: {
             id: true,
-            course: {
-              select: { name: true },
-            },
+            course: { select: { name: true } },
             imageUrl: true,
             lastMessage: {
               select: {
@@ -67,8 +56,6 @@ export async function chatSummary(_: any, __: any, context: contextType) {
         },
       },
     });
-
-    console.log(chats);
 
     return {
       chats: chats.map((c: ChatSummary) => ({
@@ -86,14 +73,10 @@ export async function chatSummary(_: any, __: any, context: contextType) {
       })),
     };
   } catch (err) {
-    if (err instanceof GraphQLError) {
-      console.log(err);
-      throw err;
-    }
+    if (err instanceof GraphQLError) throw err;
 
     throw GraphQLCustomLError({
-      message:
-        "We couldn't activate your account. Please try again later. If this error persists, please contact our **support team**.",
+      message: "We couldn't load your chats. Please try again later.",
       status: 500,
       code: "SERVER_ERROR",
     });

@@ -1,11 +1,10 @@
 import { GraphQLCustomLError } from "../../lib/error.js";
 import { GraphQLError } from "graphql";
 import { type contextType } from "../../lib/types.js";
+import { requireAuth } from "../../lib/guards.js";
 
 type chatMessagesArgs = {
-  input: {
-    chatId: string;
-  };
+  input: { chatId: string };
 };
 
 export async function chatMessages(
@@ -13,46 +12,32 @@ export async function chatMessages(
   { input }: chatMessagesArgs,
   context: contextType,
 ) {
-  const { prisma, req } = context;
+  const { prisma, currentUser } = context;
+  const user = requireAuth(currentUser);
+  const { chatId } = input;
 
-  const chatId = input.chatId;
-
-  // check if user does exist & is part of chat
-  const user = await prisma.user.findUnique({
-    where: { id: req.user.id },
-    include: { sender: true },
-  });
-
-  if (!user) {
-  }
-
-  // query to fetch chat data
   try {
+    const sender = await prisma.sender.findUnique({
+      where: { userId: user.id },
+    });
+
+    if (!sender) throw new GraphQLError("Sender profile not found");
+
     const chat = await prisma.chat.findFirst({
       where: {
         id: chatId,
-        chatMembers: {
-          some: {
-            senderId: user.sender.id, // ensure user is member
-          },
-        },
+        chatMembers: { some: { senderId: sender.id } },
       },
       select: {
         id: true,
         chatMembers: {
-          where: {
-            senderId: user.sender.id,
-          },
-          select: {
-            unreadMessageCount: true,
-          },
+          where: { senderId: sender.id },
+          select: { unreadMessageCount: true },
           take: 1,
         },
         messages: {
           take: 30,
-          orderBy: {
-            createdAt: "desc",
-          },
+          orderBy: { createdAt: "desc" },
           select: {
             id: true,
             content: true,
@@ -65,24 +50,13 @@ export async function chatMessages(
             media: true,
             starredMessages: true,
             pinnedMessages: {
-              select: {
-                id: true,
-                messageId: true,
-                pinnedById: true,
-                pinnedAt: true,
-              },
+              select: { id: true, messageId: true, pinnedById: true, pinnedAt: true },
             },
             sender: {
               select: {
                 id: true,
                 user: {
-                  select: {
-                    id: true,
-                    name: true,
-                    image: true,
-                    role: true,
-                    email: true,
-                  },
+                  select: { id: true, name: true, image: true, role: true, email: true },
                 },
               },
             },
@@ -91,13 +65,10 @@ export async function chatMessages(
       },
     });
 
-    if (!chat) {
-      throw new GraphQLError("Chat not found or unauthorized");
-    }
+    if (!chat) throw new GraphQLError("Chat not found or unauthorized");
 
     const messages = chat.messages.reverse();
 
-    console.log(chat);
     return {
       chatId: chat.id,
       unreadMessageCount: chat.chatMembers[0]?.unreadMessageCount ?? 0,
@@ -105,14 +76,10 @@ export async function chatMessages(
       nextCursor: messages.length ? messages[0].id : null,
     };
   } catch (err) {
-    if (err instanceof GraphQLError) {
-      console.log(err);
-      throw err;
-    }
+    if (err instanceof GraphQLError) throw err;
 
     throw GraphQLCustomLError({
-      message:
-        "We couldn't activate your account. Please try again later. If this error persists, please contact our **support team**.",
+      message: "We couldn't load the chat messages. Please try again later.",
       status: 500,
       code: "SERVER_ERROR",
     });

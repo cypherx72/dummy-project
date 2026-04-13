@@ -12,7 +12,7 @@ export const formInputSchema = z.object({
       {
         error:
           "Your password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
-      }
+      },
     ),
 });
 
@@ -56,7 +56,7 @@ export const fileSchema = z
 
     {
       message: "No file provided.",
-    }
+    },
   )
   .refine(
     (file) => file.size <= MAX_FILE_SIZE,
@@ -65,14 +65,86 @@ export const fileSchema = z
       message: `The file is too large. Max size is ${
         MAX_FILE_SIZE / (1024 * 1024)
       }MB.`,
-    }
+    },
   )
   .refine(
     (file) => ACCEPTED_MIME_TYPES.includes(file.type),
 
     {
       message: "Only JPEG, PNG, WebP images or PDF files are allowed.",
-    }
+    },
   );
 
 export type ValidatedFile = z.infer<typeof fileSchema>;
+
+export const SubmitAssignmentSchema = z
+  .object({
+    submissionType: z.enum(["fileUpload", "textEntry", "websiteUrl"]),
+    attachments: z.any().optional(),
+    text: z.string().optional(),
+    url: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.submissionType === "fileUpload") {
+      const fileResult = fileSchema.safeParse(data.attachments);
+
+      if (!fileResult.success) {
+        const tree = z.treeifyError(fileResult.error);
+
+        // ❌ Multiple addIssue calls to the same path = RHF only keeps the last
+        // ✅ One issue, all messages collected together
+        ctx.addIssue({
+          code: "custom",
+          path: ["file"],
+          message: tree.errors.join(", "), // for fieldState.error.message
+          params: {
+            messages: tree.errors, // for fieldState.error.types if you want the array
+          },
+        });
+      }
+    }
+
+    if (data.submissionType === "textEntry") {
+      const textResult = textSchema.safeParse(data.text);
+      if (!textResult.success) {
+        const tree = z.treeifyError(textResult.error);
+
+        tree.errors.map((err) => {
+          console.log(err);
+          ctx.addIssue({
+            code: "custom",
+            message: err,
+            path: ["text"],
+          });
+        });
+      }
+    }
+
+    if (data.submissionType === "websiteUrl") {
+      const urlResult = urlSchema.safeParse(data.url);
+      if (!urlResult.success) {
+        const tree = z.treeifyError(urlResult.error);
+
+        tree.errors.map((err) => {
+          console.log(err);
+          ctx.addIssue({
+            code: "custom",
+            message: err,
+            path: ["url"],
+          });
+        });
+      }
+    }
+  });
+
+export type SubmitAssignmentFormValues = z.infer<typeof SubmitAssignmentSchema>;
+
+export const urlSchema = z
+  .string()
+  .url("Enter a valid URL (e.g. https://github.com/you/repo).")
+  .max(500, "URL is too long.");
+
+export const textSchema = z
+  .string()
+  .min(10, "Response must be at least 10 characters.")
+  .max(2000, "Cannot exceed 2000 characters.");

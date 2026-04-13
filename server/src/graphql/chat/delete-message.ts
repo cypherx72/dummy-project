@@ -1,12 +1,10 @@
 import { GraphQLCustomLError } from "../../lib/error.js";
 import { GraphQLError } from "graphql";
 import { type contextType } from "../../lib/types.js";
+import { requireAuth } from "../../lib/guards.js";
 
 type DeleteMessageArgs = {
-  input: {
-    chatId: string;
-    messageId: string;
-  };
+  input: { chatId: string; messageId: string };
 };
 
 export async function DeleteMessage(
@@ -14,36 +12,26 @@ export async function DeleteMessage(
   { input }: DeleteMessageArgs,
   context: contextType,
 ) {
-  const { prisma, cloudinary, io, req } = context;
+  const { prisma, cloudinary, io, currentUser } = context;
+  const user = requireAuth(currentUser);
   const { chatId, messageId } = input;
 
+  if (!chatId || !messageId) {
+    throw new GraphQLError("chatId and messageId are required");
+  }
+
   try {
-    if (!chatId || !messageId) {
-      throw new GraphQLError("chatId and messageId are required");
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      include: { sender: true },
+    const sender = await prisma.sender.findUnique({
+      where: { userId: user.id },
     });
 
-    if (!user || !user.sender) {
-      throw new GraphQLError("Unauthorized");
-    }
+    if (!sender) throw new GraphQLError("Unauthorized");
 
-    console.log(user);
     const chatMember = await prisma.chatMember.findUnique({
-      where: {
-        chatId_senderId: {
-          chatId,
-          senderId: user.sender.id,
-        },
-      },
+      where: { chatId_senderId: { chatId, senderId: sender.id } },
     });
 
-    if (!chatMember) {
-      throw new GraphQLError("Unauthorized");
-    }
+    if (!chatMember) throw new GraphQLError("Unauthorized");
 
     const deletedMessage = await prisma.message.update({
       where: { id: messageId },
@@ -52,23 +40,15 @@ export async function DeleteMessage(
     });
 
     if (deletedMessage.media) {
-      const { publicId, resourceType } = deletedMessage.media;
-
-      await cloudinary.uploader.destroy(publicId, {
-        resource_type: resourceType,
-      });
+      const { public_id, resource_type } = deletedMessage.media;
+      await cloudinary.uploader.destroy(public_id, { resource_type });
     }
 
     io.to(`chat:${chatId}`).emit("message:delete", deletedMessage);
 
     await prisma.chatMember.updateMany({
-      where: {
-        chatId,
-        userId: { not: user.id },
-      },
-      data: {
-        unreadMessageCount: { decrement: 1 },
-      },
+      where: { chatId, senderId: { not: sender.id } },
+      data: { unreadMessageCount: { decrement: 1 } },
     });
 
     return {

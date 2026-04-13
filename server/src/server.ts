@@ -86,6 +86,10 @@ app.use(
       prisma,
       cloudinary,
       io,
+      // authMiddleware runs before this and attaches the full Prisma User
+      // object to req.user. We surface it here as a typed, named field so
+      // resolvers never have to reach into req directly.
+      currentUser: (req as any).user ?? null,
     }),
   }),
 );

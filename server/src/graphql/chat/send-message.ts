@@ -1,15 +1,10 @@
 import { GraphQLCustomLError } from "../../lib/error.js";
 import { GraphQLError } from "graphql";
 import { type contextType } from "../../lib/types.js";
-import { success } from "zod";
+import { requireAuth } from "../../lib/guards.js";
 
 type sendMessageArgs = {
-  input: {
-    chatId: string;
-    content?: string;
-    media?: string;
-    replyToId?: string;
-  };
+  input: { chatId: string; content?: string; media?: string; replyToId?: string };
 };
 
 export async function SendMessage(
@@ -17,21 +12,17 @@ export async function SendMessage(
   { input }: sendMessageArgs,
   context: contextType,
 ) {
-  const { prisma, cloudinary, io, req } = context;
+  const { prisma, cloudinary, io, currentUser } = context;
+  const user = requireAuth(currentUser);
   const { media, content, chatId, replyToId } = input;
 
   const uploadMedia = async (imagePath: string) => {
-    // Use the uploaded file's name as the asset's public ID and
-    // allow overwriting the asset with new versions
-    const options = {
-      use_filename: true,
-      unique_filename: false,
-      overwrite: true,
-    };
-
     try {
-      // Upload the image to cloudinary
-      const result = await cloudinary.uploader.upload(imagePath, options);
+      const result = await cloudinary.uploader.upload(imagePath, {
+        use_filename: true,
+        unique_filename: false,
+        overwrite: true,
+      });
 
       const {
         secure_url: cloudinary_url,
@@ -42,58 +33,39 @@ export async function SendMessage(
         bytes,
       } = result;
 
-      console.log(result);
-      //Store the media in db
-      const media = await prisma.media.create({
+      return await prisma.media.create({
         data: {
           cloudinary_url,
           public_id,
           resource_type,
-          size: bytes.toString(),
+          bytes,
           name: display_name,
           file_extension: format,
           associate: "chat",
         },
       });
-
-      return media;
     } catch (error) {
-      console.error("000error");
+      console.error("Media upload failed:", error);
+      return null;
     }
   };
 
+  if (!content && !media) {
+    throw new GraphQLError("A message must have content or media.");
+  }
+
   try {
-    if (!content && !media) {
-      //raise graphql error
-    }
-
-    const userId = req.user.userId;
-
     const isChatMember = await prisma.chatMember.findFirst({
-      where: { chatId, userId },
+      where: {
+        chatId,
+        sender: { userId: user.id },
+      },
       include: { sender: true },
     });
 
-    console.log(isChatMember);
-    if (!isChatMember) {
-      throw new GraphQLError("Unauthorized");
-    }
+    if (!isChatMember) throw new GraphQLError("Unauthorized");
 
-    let mediaObj: {
-      createdAt: string;
-      id: string;
-      cloudinary_url: string;
-      public_id: string;
-      resource_type: string;
-      size: string;
-      name: string;
-      file_extension: string;
-      associate: string;
-    } | null = null;
-
-    if (media) {
-      mediaObj = await uploadMedia(media);
-    }
+    const mediaObj = media ? await uploadMedia(media) : null;
 
     const result = await prisma.$transaction(async (tx: typeof prisma) => {
       const createdMessage = await tx.message.create({
@@ -112,16 +84,11 @@ export async function SendMessage(
       });
 
       await tx.chatMember.updateMany({
-        where: {
-          chatId,
-          senderId: { not: isChatMember.sender.id },
-        },
-        data: {
-          unreadMessageCount: { increment: 1 },
-        },
+        where: { chatId, senderId: { not: isChatMember.sender.id } },
+        data: { unreadMessageCount: { increment: 1 } },
       });
 
-      const fullMessage = await tx.message.findUnique({
+      return tx.message.findUnique({
         where: { id: createdMessage.id },
         select: {
           id: true,
@@ -135,30 +102,18 @@ export async function SendMessage(
           media: true,
           starredMessages: true,
           pinnedMessages: {
-            select: {
-              id: true,
-              messageId: true,
-              pinnedById: true,
-              pinnedAt: true,
-            },
+            select: { id: true, messageId: true, pinnedById: true, pinnedAt: true },
           },
           sender: {
             select: {
               id: true,
               user: {
-                select: {
-                  name: true,
-                  image: true,
-                  role: true,
-                  email: true,
-                },
+                select: { id: true, name: true, image: true, role: true, email: true },
               },
             },
           },
         },
       });
-
-      return fullMessage;
     });
 
     io.to(`chat:${chatId}`).emit("message:new", result);
@@ -169,14 +124,10 @@ export async function SendMessage(
       code: "MESSAGE_SENT",
     };
   } catch (err) {
-    if (err instanceof GraphQLError) {
-      console.log(err);
-      throw err;
-    }
+    if (err instanceof GraphQLError) throw err;
 
     throw GraphQLCustomLError({
-      message:
-        "We couldn't activate your account. Please try again later. If this error persists, please contact our **support team**.",
+      message: "We couldn't send the message. Please try again later.",
       status: 500,
       code: "SERVER_ERROR",
     });

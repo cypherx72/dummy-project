@@ -1,12 +1,10 @@
 import { GraphQLCustomLError } from "../../lib/error.js";
 import { GraphQLError } from "graphql";
 import { type contextType } from "../../lib/types.js";
+import { requireAuth } from "../../lib/guards.js";
 
 type PinMessageArgs = {
-  input: {
-    chatId: string;
-    messageId: string;
-  };
+  input: { chatId: string; messageId: string };
 };
 
 export async function PinMessage(
@@ -14,73 +12,42 @@ export async function PinMessage(
   { input }: PinMessageArgs,
   context: contextType,
 ) {
-  const { prisma, io, req } = context;
+  const { prisma, io, currentUser } = context;
+  const user = requireAuth(currentUser);
   const { chatId, messageId } = input;
 
-  try {
-    if (!chatId || !messageId) {
-      throw new GraphQLError("chatId and messageId are required");
-    }
+  if (!chatId || !messageId) {
+    throw new GraphQLError("chatId and messageId are required");
+  }
 
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      include: { sender: true },
+  try {
+    const sender = await prisma.sender.findUnique({
+      where: { userId: user.id },
     });
 
-    if (!user || !user.sender) {
-      throw new GraphQLError("Unauthorized");
-    }
+    if (!sender) throw new GraphQLError("Unauthorized");
 
     const chatMember = await prisma.chatMember.findUnique({
-      where: {
-        chatId_senderId: {
-          chatId,
-          senderId: user.sender.id,
-        },
-      },
+      where: { chatId_senderId: { chatId, senderId: sender.id } },
     });
 
-    if (!chatMember) {
-      throw new GraphQLError("Unauthorized");
-    }
+    if (!chatMember) throw new GraphQLError("Unauthorized");
 
-    console.log(chatMember);
-
-    const message = await prisma.message.findUnique({
-      where: { id: messageId },
-    });
-
-    if (!message) {
-      throw new GraphQLError("Message not found");
-    }
+    const message = await prisma.message.findUnique({ where: { id: messageId } });
+    if (!message) throw new GraphQLError("Message not found");
 
     const existingPin = await prisma.pinnedMessage.findUnique({
-      where: {
-        chatId_messageId: {
-          chatId,
-          messageId,
-        },
-      },
+      where: { chatId_messageId: { chatId, messageId } },
     });
 
-    if (existingPin) {
-      throw new GraphQLError("Message already pinned");
-    }
+    if (existingPin) throw new GraphQLError("Message already pinned");
 
     const pinnedMessage = await prisma.pinnedMessage.create({
-      data: {
-        chatId,
-        messageId,
-        pinnedById: user.sender.id,
-      },
+      data: { chatId, messageId, pinnedById: sender.id },
       select: {
         chatId: true,
         id: true,
-        message: {
-          include: {
-            pinnedMessages: true,
-          },
-        },
+        message: { include: { pinnedMessages: true } },
       },
     });
 
