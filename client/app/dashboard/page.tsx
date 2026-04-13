@@ -47,7 +47,7 @@ import { useSession } from "@/context/session-context";
 
 export default function DashboardPage() {
   const data = useSession();
-  console.log(data);
+  // data loaded
   return (
     <SidebarProvider>
       <AppSidebar />

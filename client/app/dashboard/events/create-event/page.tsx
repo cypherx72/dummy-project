@@ -20,7 +20,7 @@ export default function CreateEvent() {
   });
 
   function onSubmit(values: EventFormValues) {
-    console.log(values);
+    // form values
   }
 
   return (

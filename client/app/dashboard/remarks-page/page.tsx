@@ -55,8 +55,54 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { toast } from "sonner";
+import { showToast, errorToast } from "@/components/ui/toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useQuery, useMutation, gql } from "@apollo/client";
+
+// ─── GraphQL ──────────────────────────────────────────────────────────────────
+
+const GET_TEACHER_COURSES_REMARKS = gql`
+  query GetTeacherCoursesRemarks {
+    GetTeacherCourses {
+      status
+      courses {
+        id
+        name
+        code
+        enrolledStudents { id enrolledAt user { id name email image } }
+        enrolledCount
+      }
+    }
+  }
+`;
+
+const GET_REMARKS = gql`
+  query GetRemarks($courseId: ID!) {
+    GetRemarks(courseId: $courseId) {
+      status
+      remarks {
+        id
+        courseId
+        studentId
+        content
+        category
+        remarkDate
+        student { id name email }
+      }
+    }
+  }
+`;
+
+const SAVE_REMARK = gql`
+  mutation SaveRemark($input: SaveRemarkInput!) {
+    SaveRemark(input: $input) {
+      status
+      message
+      code
+      remark { id content category }
+    }
+  }
+`;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -427,13 +473,66 @@ function StudentCard({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function RemarksPage() {
-  const [selectedClass, setSelectedClass] = React.useState<ClassInfo | null>(
-    null,
-  );
-  const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(
-    null,
-  );
-  const [isSaving, setIsSaving] = React.useState(false);
+  const [selectedClass, setSelectedClass] = React.useState<ClassInfo | null>(null);
+  const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(null);
+
+  const { data: coursesData } = useQuery(GET_TEACHER_COURSES_REMARKS, {
+    onError: () => errorToast("Failed to load courses."),
+  });
+
+  const liveCourses: ClassInfo[] = React.useMemo(() => {
+    const raw = coursesData?.GetTeacherCourses?.courses ?? [];
+    if (raw.length > 0) {
+      return raw.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        grade: c.code,
+        subject: c.name,
+        studentCount: c.enrolledCount ?? 0,
+        remarksCompleted: 0,
+        term: "term2_2025",
+      }));
+    }
+    return MOCK_CLASSES;
+  }, [coursesData]);
+
+  const liveStudents: Record<string, Student[]> = React.useMemo(() => {
+    const raw = coursesData?.GetTeacherCourses?.courses ?? [];
+    if (raw.length === 0) return MOCK_STUDENTS;
+    const map: Record<string, Student[]> = {};
+    raw.forEach((c: any) => {
+      map[c.id] = (c.enrolledStudents ?? []).map((e: any) => ({
+        id: e.user.id,
+        name: e.user.name ?? "Student",
+        rollNumber: e.user.id.slice(0, 6),
+        avatarInitials: (e.user.name ?? "ST").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
+        email: e.user.email ?? "",
+        hasRemarks: false,
+        lastUpdated: null,
+        overallPerformance: "good" as const,
+        gpa: 0,
+        attendance: 0,
+      }));
+    });
+    return map;
+  }, [coursesData]);
+
+  const { data: remarksData, refetch: refetchRemarks } = useQuery(GET_REMARKS, {
+    skip: !selectedClass,
+    variables: { courseId: selectedClass?.id },
+    onError: () => errorToast("Failed to load remarks."),
+  });
+
+  const liveRemarks: Record<string, any> = React.useMemo(() => {
+    const raw = remarksData?.GetRemarks?.remarks ?? [];
+    const map: Record<string, any> = {};
+    raw.forEach((r: any) => {
+      map[r.studentId] = r;
+    });
+    return map;
+  }, [remarksData]);
+
+  const [saveRemarkMutation, { loading: isSaving }] = useMutation(SAVE_REMARK);
 
   const form = useForm<RemarkFormValues>({
     resolver: zodResolver(remarkFormSchema),
@@ -457,54 +556,74 @@ export default function RemarksPage() {
 
   function openStudent(student: Student) {
     setSelectedStudent(student);
-    const existingRemark = MOCK_REMARKS[student.id];
+    // Try live remark first, fallback to mock
+    const existingRemark = liveRemarks[student.id] ?? MOCK_REMARKS[student.id];
     if (existingRemark) {
       form.reset({
         studentId: student.id,
-        term: existingRemark.term,
-        academic: existingRemark.academic,
-        behavior: existingRemark.behavior,
-        attendance: existingRemark.attendance,
-        extracurricular: existingRemark.extracurricular,
-        general: existingRemark.general,
-        strengths: existingRemark.strengths,
-        areasForImprovement: existingRemark.areasForImprovement,
+        term: existingRemark.term ?? "term2_2025",
+        academic: existingRemark.academic ?? (existingRemark.category === "academic" ? existingRemark.content : ""),
+        behavior: existingRemark.behavior ?? (existingRemark.category === "behaviour" ? existingRemark.content : ""),
+        attendance: existingRemark.attendance ?? "",
+        extracurricular: existingRemark.extracurricular ?? "",
+        general: existingRemark.general ?? (existingRemark.category === "general" ? existingRemark.content : ""),
+        strengths: existingRemark.strengths ?? "",
+        areasForImprovement: existingRemark.areasForImprovement ?? "",
       });
     } else {
       form.reset({
         studentId: student.id,
         term: "term2_2025",
-        academic: "",
-        behavior: "",
-        attendance: "",
-        extracurricular: "",
-        general: "",
-        strengths: "",
-        areasForImprovement: "",
+        academic: "", behavior: "", attendance: "",
+        extracurricular: "", general: "", strengths: "", areasForImprovement: "",
       });
     }
   }
 
-  function backToClasses() {
-    setSelectedClass(null);
-    setSelectedStudent(null);
-  }
-
-  function backToStudents() {
-    setSelectedStudent(null);
-  }
+  function backToClasses() { setSelectedClass(null); setSelectedStudent(null); }
+  function backToStudents() { setSelectedStudent(null); }
 
   async function onSubmit(values: RemarkFormValues) {
-    setIsSaving(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    console.log("Remarks submitted:", values);
-    setIsSaving(false);
-    toast.success("Remarks saved successfully", {
-      description: `Feedback saved for ${selectedStudent?.name}`,
-    });
+    const useLive = (coursesData?.GetTeacherCourses?.courses ?? []).length > 0;
+    if (!useLive) {
+      showToast("Remarks saved", `Feedback saved for ${selectedStudent?.name}`, "success");
+      return;
+    }
+    try {
+      // Save the most substantive field as the remark content
+      const content = [
+        values.academic && `Academic: ${values.academic}`,
+        values.behavior && `Behaviour: ${values.behavior}`,
+        values.attendance && `Attendance: ${values.attendance}`,
+        values.strengths && `Strengths: ${values.strengths}`,
+        values.areasForImprovement && `Areas for Improvement: ${values.areasForImprovement}`,
+        values.general && `General: ${values.general}`,
+      ].filter(Boolean).join("\n");
+
+      const existing = liveRemarks[values.studentId];
+      const res = await saveRemarkMutation({
+        variables: {
+          input: {
+            courseId: selectedClass!.id,
+            studentId: values.studentId,
+            content: content || values.general || "No remarks.",
+            category: "general",
+            remarkId: existing?.id ?? undefined,
+          },
+        },
+      });
+      if (res.data?.SaveRemark?.status === 200) {
+        showToast("Remarks saved successfully", `Feedback saved for ${selectedStudent?.name}`, "success");
+        refetchRemarks();
+      } else {
+        errorToast(res.data?.SaveRemark?.message ?? "Failed to save remarks.");
+      }
+    } catch {
+      errorToast("Failed to save remarks. Please try again.");
+    }
   }
 
-  const students = selectedClass ? MOCK_STUDENTS[selectedClass.id] || [] : [];
+  const students = selectedClass ? (liveStudents[selectedClass.id] ?? []) : [];
 
   // ── Student Remark Form ──────────────────────────────────────────────────────
   if (selectedStudent && selectedClass) {
@@ -984,7 +1103,7 @@ export default function RemarksPage() {
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Total Classes</p>
-                <p className="font-bold text-2xl">{MOCK_CLASSES.length}</p>
+                <p className="font-bold text-2xl">{liveCourses.length}</p>
               </div>
             </div>
           </CardContent>
@@ -999,7 +1118,7 @@ export default function RemarksPage() {
               <div>
                 <p className="text-muted-foreground text-xs">Completed</p>
                 <p className="font-bold text-2xl">
-                  {MOCK_CLASSES.reduce((acc, c) => acc + c.remarksCompleted, 0)}
+                  {liveCourses.reduce((acc, c) => acc + c.remarksCompleted, 0)}
                 </p>
               </div>
             </div>
@@ -1015,7 +1134,7 @@ export default function RemarksPage() {
               <div>
                 <p className="text-muted-foreground text-xs">Pending</p>
                 <p className="font-bold text-2xl">
-                  {MOCK_CLASSES.reduce(
+                  {liveCourses.reduce(
                     (acc, c) => acc + (c.studentCount - c.remarksCompleted),
                     0,
                   )}
@@ -1030,7 +1149,7 @@ export default function RemarksPage() {
       <div className="space-y-3">
         <h2 className="font-semibold text-lg">Your Classes</h2>
         <div className="gap-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {MOCK_CLASSES.map((classInfo) => (
+          {liveCourses.map((classInfo) => (
             <ClassCard
               key={classInfo.id}
               classInfo={classInfo}

@@ -502,6 +502,19 @@ type Query {
   GetCourseById(id: ID!): GetCourseResponse!
   GetTeacherCourses: GetTeacherCoursesResponse!
   GetEnrolledStudents(courseId: ID!): GetEnrolledStudentsResponse!
+
+  # Attendance
+  GetCourseAttendance(courseId: ID!, date: String): GetCourseAttendanceResponse!
+
+  # Quiz
+  GetQuizzes(courseId: ID): GetQuizzesResponse!
+
+  # Remarks
+  GetRemarks(courseId: ID!): GetRemarksResponse!
+
+  # Communication
+  GetAnnouncements: GetAnnouncementsResponse!
+  GetMeetings: GetMeetingsResponse!
 }
 
 type Mutation {
@@ -521,5 +534,264 @@ type Mutation {
   # Enrollment mutations
   EnrollStudent(input: EnrollStudentInput!): EnrollmentResponse!
   UnenrollStudent(input: UnenrollStudentInput!): DefaultResponse!
+
+  # Attendance
+  SaveAttendance(input: SaveAttendanceInput!): DefaultResponse!
+
+  # Quiz
+  CreateQuiz(input: CreateQuizInput!): CreateQuizResponse!
+
+  # Remarks
+  SaveRemark(input: SaveRemarkInput!): SaveRemarkResponse!
+
+  # Communication
+  CreateAnnouncement(input: CreateAnnouncementInput!): AnnouncementResponse!
+  ScheduleMeeting(input: ScheduleMeetingInput!): MeetingResponse!
+
+  # Grading
+  GradeSubmissions(input: GradeSubmissionsInput!): DefaultResponse!
+}
+
+#########################
+# ATTENDANCE TYPES
+#########################
+
+type AttendanceStudent {
+  userId: ID!
+  name: String
+  email: String
+  image: String
+  status: String!
+  note: String
+  recordId: ID
+}
+
+type GetCourseAttendanceResponse {
+  status: Int!
+  message: String!
+  code: String!
+  students: [AttendanceStudent!]!
+  date: String!
+}
+
+input AttendanceEntryInput {
+  studentId: ID!
+  status: String!
+  note: String
+}
+
+input SaveAttendanceInput {
+  courseId: ID!
+  date: String!
+  entries: [AttendanceEntryInput!]!
+}
+
+#########################
+# QUIZ TYPES
+#########################
+
+type QuizQuestionType {
+  id: ID!
+  type: String!
+  text: String!
+  marks: Float!
+  options: String
+  correctAnswer: String
+  explanation: String
+  order: Int!
+}
+
+type QuizType {
+  id: ID!
+  title: String!
+  description: String
+  courseId: ID!
+  createdById: ID!
+  timeLimit: Int
+  dueDate: String
+  shuffleQuestions: Boolean!
+  isPublished: Boolean!
+  createdAt: String!
+  questions: [QuizQuestionType!]!
+  course: Course
+}
+
+type GetQuizzesResponse {
+  status: Int!
+  message: String!
+  code: String!
+  quizzes: [QuizType!]!
+}
+
+type CreateQuizResponse {
+  status: Int!
+  message: String!
+  code: String!
+  quiz: QuizType
+}
+
+input QuizQuestionInput {
+  type: String!
+  text: String!
+  marks: Float
+  options: String
+  correctAnswer: String
+  explanation: String
+}
+
+input CreateQuizInput {
+  title: String!
+  description: String
+  courseId: ID!
+  timeLimit: Int
+  dueDate: String
+  shuffleQuestions: Boolean
+  isPublished: Boolean
+  questions: [QuizQuestionInput!]!
+}
+
+#########################
+# REMARKS TYPES
+#########################
+
+type RemarkStudent {
+  id: ID!
+  name: String
+  email: String
+  image: String
+}
+
+type RemarkType {
+  id: ID!
+  courseId: ID!
+  studentId: ID!
+  teacherId: ID!
+  content: String!
+  remarkDate: String!
+  category: String!
+  createdAt: String!
+  student: RemarkStudent
+}
+
+type GetRemarksResponse {
+  status: Int!
+  message: String!
+  code: String!
+  remarks: [RemarkType!]!
+}
+
+type SaveRemarkResponse {
+  status: Int!
+  message: String!
+  code: String!
+  remark: RemarkType
+}
+
+input SaveRemarkInput {
+  courseId: ID!
+  studentId: ID!
+  content: String!
+  category: String
+  remarkId: ID
+}
+
+#########################
+# COMMUNICATION TYPES
+#########################
+
+type AnnouncementCreator {
+  id: ID!
+  name: String
+  image: String
+}
+
+type AnnouncementType {
+  id: ID!
+  title: String!
+  content: String!
+  priority: String!
+  courseId: ID
+  createdAt: String!
+  course: Course
+  creator: AnnouncementCreator
+}
+
+type AnnouncementResponse {
+  status: Int!
+  message: String!
+  code: String!
+  announcement: AnnouncementType
+}
+
+type GetAnnouncementsResponse {
+  status: Int!
+  message: String!
+  code: String!
+  announcements: [AnnouncementType!]!
+}
+
+type MeetingType {
+  id: ID!
+  title: String!
+  description: String
+  courseId: ID
+  startTime: String!
+  endTime: String
+  location: String
+  meetingLink: String
+  type: String!
+  createdAt: String!
+  course: Course
+  creator: AnnouncementCreator
+}
+
+type MeetingResponse {
+  status: Int!
+  message: String!
+  code: String!
+  meeting: MeetingType
+}
+
+type GetMeetingsResponse {
+  status: Int!
+  message: String!
+  code: String!
+  meetings: [MeetingType!]!
+}
+
+input CreateAnnouncementInput {
+  title: String!
+  content: String!
+  courseId: ID
+  priority: String
+}
+
+input ScheduleMeetingInput {
+  title: String!
+  description: String
+  courseId: ID
+  startTime: String!
+  endTime: String
+  location: String
+  meetingLink: String
+  type: String
+}
+
+#########################
+# GRADING TYPES
+#########################
+
+input GradeEntryInput {
+  studentId: ID!
+  gradeValue: String!
+  feedback: String
+}
+
+input GradeSubmissionsInput {
+  assignmentId: ID!
+  gradingMode: String!
+  grades: [GradeEntryInput!]!
 }
 `;
+
+// Appended: Attendance, Quiz, Remarks, Communication, Grading types

@@ -8,7 +8,6 @@ import { GetTodaysTasks } from "../tasks/getTodayTasks.js";
 import { type contextType } from "../../lib/types.js";
 
 export async function GetDashboardData(_: any, __: any, context: contextType) {
-  console.log("...running in dashboarddata");
   const [courses, activities, assignments, notifications, events, tasks] =
     await Promise.all([
       GetUserCourses(_, {}, context),
@@ -18,13 +17,6 @@ export async function GetDashboardData(_: any, __: any, context: contextType) {
       GetUpcomingEvents(_, {}, context),
       GetTodaysTasks(_, {}, context),
     ]);
-
-  console.log("courses", courses);
-  console.log("activities", activities);
-  console.log("assignmetns", assignments);
-  console.log("notifications", notifications);
-  console.log("events", events);
-  console.log("tasks", tasks);
 
   return {
     status: 200,

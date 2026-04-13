@@ -64,7 +64,50 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
+import { showToast, errorToast } from "@/components/ui/toast";
+import { useQuery, useMutation, gql } from "@apollo/client";
+
+// ─── GraphQL ──────────────────────────────────────────────────────────────────
+
+const GET_TEACHER_COURSES = gql`
+  query GetTeacherCourses {
+    GetTeacherCourses {
+      status
+      courses {
+        id
+        name
+        code
+      }
+    }
+  }
+`;
+
+const GET_COURSE_ATTENDANCE = gql`
+  query GetCourseAttendance($courseId: ID!, $date: String) {
+    GetCourseAttendance(courseId: $courseId, date: $date) {
+      status
+      students {
+        userId
+        name
+        email
+        status
+        note
+        recordId
+      }
+      date
+    }
+  }
+`;
+
+const SAVE_ATTENDANCE = gql`
+  mutation SaveAttendance($input: SaveAttendanceInput!) {
+    SaveAttendance(input: $input) {
+      status
+      message
+      code
+    }
+  }
+`;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -425,7 +468,25 @@ function StatusToggle({
 
 export default function AttendancePage() {
   const [students, setStudents] = React.useState<Student[]>([]);
-  const [isSaving, setIsSaving] = React.useState(false);
+
+  const { data: coursesData, loading: coursesLoading } = useQuery(GET_TEACHER_COURSES, {
+    onError: () => errorToast("Failed to load courses."),
+  });
+
+  const liveCourses: ClassSession[] = React.useMemo(() => {
+    const raw = coursesData?.GetTeacherCourses?.courses ?? [];
+    if (raw.length > 0) {
+      return raw.map((c: any) => ({
+        id: c.id,
+        label: `${c.name} (${c.code})`,
+        subject: c.name,
+        grade: c.code,
+        section: "",
+        totalStudents: 0,
+      }));
+    }
+    return MOCK_CLASSES;
+  }, [coursesData]);
 
   const form = useForm<AttendanceFormValues>({
     resolver: zodResolver(attendanceFormSchema),
@@ -442,27 +503,59 @@ export default function AttendancePage() {
   });
 
   const watchClassId = form.watch("classId");
+  const watchDate = form.watch("date");
   const watchRecords = form.watch("records");
 
-  // Load students when class changes
+  const { loading: attendanceLoading, refetch: refetchAttendance } = useQuery(
+    GET_COURSE_ATTENDANCE,
+    {
+      skip: !watchClassId,
+      variables: { courseId: watchClassId, date: watchDate?.toISOString() },
+      onCompleted: (data) => {
+        const apiStudents: Student[] = (data?.GetCourseAttendance?.students ?? []).map(
+          (s: any) => ({
+            id: s.userId,
+            name: s.name ?? "Student",
+            rollNumber: s.userId.slice(0, 6),
+            avatarInitials: (s.name ?? "ST").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
+          }),
+        );
+        // Use live students if available, else fall back to mock
+        const studentsToUse = apiStudents.length > 0 ? apiStudents : (MOCK_STUDENTS[watchClassId] ?? []);
+        setStudents(studentsToUse);
+        const apiRecords = data?.GetCourseAttendance?.students ?? [];
+        form.setValue(
+          "records",
+          studentsToUse.map((s) => {
+            const existing = apiRecords.find((r: any) => r.userId === s.id);
+            return {
+              studentId: s.id,
+              status: (existing?.status ?? "present") as AttendanceStatus,
+              remark: existing?.note ?? "",
+            };
+          }),
+        );
+      },
+      onError: () => errorToast("Failed to load attendance records."),
+    },
+  );
+
+  // Fallback: when classId changes with mock data (no live courses), still load mock students
   React.useEffect(() => {
-    if (!watchClassId) {
-      setStudents([]);
-      form.setValue("records", []);
-      return;
+    const useLive = (coursesData?.GetTeacherCourses?.courses ?? []).length > 0;
+    if (!useLive && watchClassId) {
+      const loaded = MOCK_STUDENTS[watchClassId] ?? [];
+      setStudents(loaded);
+      form.setValue("records", getDefaultRecords(loaded));
     }
-    const loaded = MOCK_STUDENTS[watchClassId] ?? [];
-    setStudents(loaded);
-    form.setValue("records", getDefaultRecords(loaded));
-  }, [watchClassId]);
+  }, [watchClassId, coursesData]);
+
+  const [saveAttendanceMutation, { loading: isSaving }] = useMutation(SAVE_ATTENDANCE);
 
   // Derived stats
   const stats = React.useMemo(() => {
     const counts: Record<AttendanceStatus, number> = {
-      present: 0,
-      absent: 0,
-      late: 0,
-      excused: 0,
+      present: 0, absent: 0, late: 0, excused: 0,
     };
     watchRecords.forEach((r) => {
       if (r.status in counts) counts[r.status as AttendanceStatus]++;
@@ -477,17 +570,46 @@ export default function AttendancePage() {
   }
 
   async function onSubmit(values: AttendanceFormValues) {
-    setIsSaving(true);
-    // Simulate API call
-    await new Promise((r) => setTimeout(r, 1000));
-    console.log("Attendance submitted:", values);
-    setIsSaving(false);
-    toast.success("Attendance saved successfully", {
-      description: `${values.records.length} students · ${format(values.date, "PPP")}`,
-    });
+    const useLive = (coursesData?.GetTeacherCourses?.courses ?? []).length > 0;
+    if (!useLive) {
+      // Mock mode — just show success toast
+      showToast(
+        "Attendance saved",
+        `${values.records.length} students · ${format(values.date, "PPP")}`,
+        "success",
+      );
+      return;
+    }
+    try {
+      const res = await saveAttendanceMutation({
+        variables: {
+          input: {
+            courseId: values.classId,
+            date: values.date.toISOString(),
+            entries: values.records.map((r) => ({
+              studentId: r.studentId,
+              status: r.status,
+              note: r.remark ?? null,
+            })),
+          },
+        },
+      });
+      if (res.data?.SaveAttendance?.status === 200) {
+        showToast(
+          "Attendance saved successfully",
+          `${values.records.length} students · ${format(values.date, "PPP")}`,
+          "success",
+        );
+        refetchAttendance();
+      } else {
+        errorToast(res.data?.SaveAttendance?.message ?? "Failed to save attendance.");
+      }
+    } catch {
+      errorToast("Failed to save attendance. Please try again.");
+    }
   }
 
-  const selectedClass = MOCK_CLASSES.find((c) => c.id === watchClassId);
+  const selectedClass = liveCourses.find((c) => c.id === watchClassId);
   const total = fields.length;
 
   return (
@@ -527,7 +649,7 @@ export default function AttendancePage() {
                             <SelectValue placeholder="Select a class…" />
                           </SelectTrigger>
                           <SelectContent>
-                            {MOCK_CLASSES.map((cls) => (
+                            {liveCourses.map((cls) => (
                               <SelectItem key={cls.id} value={cls.id}>
                                 {cls.label}
                               </SelectItem>

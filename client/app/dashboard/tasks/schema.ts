@@ -51,7 +51,7 @@ export const CreateTaskSchema = z.object({
 
   attachments: z
     .array(FileSchema)
-    .max(5, "You can upload up to 5 files")
+    .max(3, "You can upload up to 3 files")
     .optional(),
   extendDate: z.boolean(),
   comments: z.string().trim().max(1000).optional().or(z.literal("")),

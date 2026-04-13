@@ -79,7 +79,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { toast } from "sonner";
+import { showToast, errorToast } from "@/components/ui/toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1252,7 +1252,7 @@ function PayslipsTab() {
                     className="hidden sm:flex gap-1.5"
                     onClick={(e) => {
                       e.stopPropagation();
-                      toast.info("Download feature coming soon");
+                      showToast("Download feature coming soon", undefined, "info");
                     }}
                   >
                     <Download className="w-3.5 h-3.5" />
@@ -1335,7 +1335,7 @@ function PayslipsTab() {
                         variant="outline"
                         size="sm"
                         onClick={() =>
-                          toast.info("Download feature coming soon")
+                          showToast("Download feature coming soon", undefined, "info")
                         }
                       >
                         <Download className="mr-1.5 w-3.5 h-3.5" />
@@ -1378,7 +1378,7 @@ function ProfileTab() {
     setProfile((prev) => ({ ...prev, ...values }));
     setIsSaving(false);
     setIsEditing(false);
-    toast.success("Profile updated successfully");
+    showToast("Profile updated successfully", undefined, "success");
   }
 
   return (

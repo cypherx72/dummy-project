@@ -40,7 +40,7 @@ export function NavMain({
                 tooltip={item.title}
                 className="items-center px-16 h-[6vh]"
               >
-                <Link href={`dashboard/${item.url}`}>
+                <Link href={item.url}>
                   <item.icon />
                   <span>{item.title}</span>
                 </Link>

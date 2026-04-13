@@ -34,7 +34,7 @@ export async function CreateTask(
         description: data.description,
         instructions: data.instructions,
         dueDate: new Date(data.dueDate),
-        courseId: "1",
+        courseId: data.courseId,
         createdById: user.id,
         maxMarks: data.maxPoints,
         submissionType: data.submissionType,

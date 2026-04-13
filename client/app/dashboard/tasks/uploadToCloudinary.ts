@@ -1,19 +1,31 @@
 import { errorToast } from "@/components/ui/toast";
 import { UploadUrlConfigType } from "./types-args";
-import { FileAttachements } from "./schema";
-import { showToast } from "@/components/ui/toast";
+
+interface CloudinaryUploadResult {
+  bytes: number;
+  resourceType: string;
+  publicId: string;
+  name: string;
+  cloudinaryUrl: string;
+  fileExtension: string;
+}
+
+interface HandleFileSubmitArgs {
+  data: { attachments?: File | File[] | null };
+  configData: UploadUrlConfigType;
+  fetchConfig: () => Promise<{ data: { GetUploadSignature: UploadUrlConfigType } }>;
+}
 
 export const uploadToCloudinary = async (
   file: File,
   config: UploadUrlConfigType,
-) => {
+): Promise<CloudinaryUploadResult | undefined> => {
   if (!config) {
-    errorToast();
+    errorToast("Upload configuration is missing. Please try again.");
     return;
   }
-  const formData = new FormData();
 
-  console.log("config", config);
+  const formData = new FormData();
   formData.append("file", file);
   formData.append("api_key", config.apiKey);
   formData.append("timestamp", config.timestamp?.toString());
@@ -28,45 +40,44 @@ export const uploadToCloudinary = async (
     },
   );
 
-  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(`Cloudinary upload failed: ${res.statusText}`);
+  }
 
-  console.log(data);
+  const responseData = await res.json();
 
   return {
-    bytes: data.bytes,
-    resourceType: data.resource_type,
-    publicId: data.public_id,
-    name: data.display_name,
-    cloudinaryUrl: data.secure_url,
-    fileExtension: data.display_name.split(".").pop(),
+    bytes: responseData.bytes,
+    resourceType: responseData.resource_type,
+    publicId: responseData.public_id,
+    name: responseData.display_name,
+    cloudinaryUrl: responseData.secure_url,
+    fileExtension: (responseData.display_name as string).split(".").pop() ?? "",
   };
 };
 
-export const handleFileSubmit = async ({ data, configData, fetchConfig }) => {
-  console.log("Data received during submission: ", data);
-
-  const files = Array.isArray(data.attachments)
+export const handleFileSubmit = async ({
+  data,
+  configData,
+  fetchConfig,
+}: HandleFileSubmitArgs): Promise<CloudinaryUploadResult[]> => {
+  const files: File[] = Array.isArray(data.attachments)
     ? data.attachments
     : data.attachments
       ? [data.attachments]
       : [];
 
-  if (files.length === 0) return;
+  if (files.length === 0) return [];
 
-  console.log("Normalized files:", files);
+  let resolvedConfig = configData;
 
-  if (Object.keys(configData).length === 0) {
-    console.log("fetching data...");
-    const { data } = await fetchConfig();
-    configData = data.GetUploadSignature;
-    console.log(configData);
+  if (!resolvedConfig || Object.keys(resolvedConfig).length === 0) {
+    const { data: fetchData } = await fetchConfig();
+    resolvedConfig = fetchData.GetUploadSignature;
   }
 
-  const uploads = files.map((file) => uploadToCloudinary(file, configData));
-
+  const uploads = files.map((file) => uploadToCloudinary(file, resolvedConfig));
   const results = await Promise.all(uploads);
 
-  console.log("Submitted Task:", results);
-
-  return results;
+  return results.filter(Boolean) as CloudinaryUploadResult[];
 };

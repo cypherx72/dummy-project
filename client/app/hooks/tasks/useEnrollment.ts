@@ -7,7 +7,7 @@ import {
   ENROLL_STUDENT,
   UNENROLL_STUDENT,
 } from "@/app/dashboard/tasks/enrollment-queries";
-import { toast } from "sonner";
+import { showToast, errorToast } from "@/components/ui/toast";
 
 export const useEnrollment = () => {
   // ── Queries ──────────────────────────────────────────────────────────────
@@ -50,12 +50,15 @@ export const useEnrollment = () => {
     ENROLL_STUDENT,
     {
       onCompleted: (data) => {
-        toast.success(data.EnrollStudent.message);
+        showToast(
+          "Student enrolled",
+          data.EnrollStudent.message,
+          "success",
+        );
       },
       onError: (err) => {
-        toast.error(err.message ?? "Enrollment failed.");
+        errorToast(err.message ?? "Enrollment failed. Please try again.");
       },
-      // Refetch both teacher courses and departments after enrollment
       refetchQueries: [GET_TEACHER_COURSES, GET_DEPARTMENTS],
     },
   );
@@ -64,10 +67,14 @@ export const useEnrollment = () => {
     UNENROLL_STUDENT,
     {
       onCompleted: (data) => {
-        toast.success(data.UnenrollStudent.message);
+        showToast(
+          "Student unenrolled",
+          data.UnenrollStudent.message,
+          "info",
+        );
       },
       onError: (err) => {
-        toast.error(err.message ?? "Unenrollment failed.");
+        errorToast(err.message ?? "Unenrollment failed. Please try again.");
       },
       refetchQueries: [GET_TEACHER_COURSES, GET_DEPARTMENTS],
     },

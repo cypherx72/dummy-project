@@ -91,7 +91,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { toast } from "sonner";
+import { showToast, errorToast } from "@/components/ui/toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1396,7 +1396,7 @@ export default function MaterialsPage() {
       setMaterials((prev) =>
         prev.map((m) => (m.id === editMaterial.id ? newMaterial : m)),
       );
-      toast.success("Material updated");
+      showToast("Material updated", undefined, "success");
     } else {
       setMaterials((prev) => [newMaterial, ...prev]);
       toast.success(publish ? "Material published!" : "Draft saved", {
@@ -1409,7 +1409,7 @@ export default function MaterialsPage() {
   function handleDelete(id: string) {
     setMaterials((prev) => prev.filter((m) => m.id !== id));
     setDeleteId(null);
-    toast.success("Material deleted");
+    showToast("Material deleted", undefined, "success");
   }
 
   const counts = {

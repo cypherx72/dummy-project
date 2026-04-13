@@ -64,7 +64,37 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { showToast, errorToast } from "@/components/ui/toast";
+import { useQuery, useMutation } from "@apollo/client/react";
+import { gql } from "@apollo/client";
+// ─── GraphQL ──────────────────────────────────────────────────────────────────
+
+const GET_TEACHER_COURSES_QUIZ = gql`
+  query GetTeacherCoursesQuiz {
+    GetTeacherCourses {
+      status
+      courses {
+        id
+        name
+        code
+      }
+    }
+  }
+`;
+
+const CREATE_QUIZ = gql`
+  mutation CreateQuiz($input: CreateQuizInput!) {
+    CreateQuiz(input: $input) {
+      status
+      message
+      code
+      quiz {
+        id
+        title
+      }
+    }
+  }
+`;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -633,6 +663,31 @@ export default function QuizBuilderPage() {
   const [isSaving, setIsSaving] = React.useState(false);
   const [isPublishing, setIsPublishing] = React.useState(false);
 
+  const { data: coursesData } = useQuery(GET_TEACHER_COURSES_QUIZ, {
+    onError: () => errorToast("Failed to load courses."),
+  });
+
+  const liveCourses = React.useMemo(() => {
+    const raw = coursesData?.GetTeacherCourses?.courses ?? [];
+    if (raw.length > 0) {
+      return raw.map((c: any) => ({
+        id: c.id,
+        label: `${c.name} (${c.code})`,
+      }));
+    }
+    return MOCK_CLASSES;
+  }, [coursesData]);
+
+  // Derive unique subjects from course names as a convenience list
+  const liveSubjects = React.useMemo(() => {
+    const raw = coursesData?.GetTeacherCourses?.courses ?? [];
+    if (raw.length > 0)
+      return [...new Set(raw.map((c: any) => c.name as string))];
+    return MOCK_SUBJECTS;
+  }, [coursesData]);
+
+  const [createQuizMutation] = useMutation(CREATE_QUIZ);
+
   const form = useForm<QuizFormValues>({
     resolver: zodResolver(quizFormSchema),
     defaultValues: {
@@ -674,19 +729,61 @@ export default function QuizBuilderPage() {
   async function handleSave(publish: boolean) {
     const valid = await form.trigger();
     if (!valid) {
-      toast.error("Please fix the errors before saving");
+      errorToast("Please fix the validation errors before saving.");
       return;
     }
     const values = form.getValues();
+
     if (publish) setIsPublishing(true);
     else setIsSaving(true);
-    await new Promise((r) => setTimeout(r, 900));
-    console.log(publish ? "Published:" : "Draft saved:", values);
-    if (publish) setIsPublishing(false);
-    else setIsSaving(false);
-    toast.success(publish ? "Quiz published!" : "Draft saved", {
-      description: `${questionCount} questions · ${totalMarks} marks total`,
-    });
+
+    try {
+      // Serialize MCQ options as JSON string for the API
+      const questions = values.questions.map((q: any) => ({
+        type: q.type,
+        text: q.text,
+        marks: q.marks,
+        options: q.type === "mcq" ? JSON.stringify(q.options) : undefined,
+        correctAnswer:
+          q.type === "true_false"
+            ? q.correctAnswer
+            : q.type === "short_answer"
+              ? q.sampleAnswer
+              : undefined,
+        explanation: q.explanation ?? null,
+      }));
+
+      const res = await createQuizMutation({
+        variables: {
+          input: {
+            title: values.title,
+            description: values.description ?? null,
+            courseId: values.classId,
+            timeLimit: values.timeLimitEnabled ? values.timeLimitMinutes : null,
+            dueDate: values.dueDate?.toISOString() ?? null,
+            shuffleQuestions: values.shuffleQuestions,
+            isPublished: publish,
+            questions,
+          },
+        },
+      });
+
+      if (res.data?.CreateQuiz?.status === 200) {
+        showToast(
+          publish ? "Quiz published!" : "Draft saved",
+          `${questionCount} questions · ${totalMarks} marks total`,
+          "success",
+        );
+        if (publish) form.reset();
+      } else {
+        errorToast(res.data?.CreateQuiz?.message ?? "Failed to save quiz.");
+      }
+    } catch {
+      errorToast("Failed to save quiz. Please try again.");
+    } finally {
+      if (publish) setIsPublishing(false);
+      else setIsSaving(false);
+    }
   }
 
   return (
@@ -779,7 +876,7 @@ export default function QuizBuilderPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {MOCK_CLASSES.map((c) => (
+                          {liveCourses.map((c) => (
                             <SelectItem key={c.id} value={c.id}>
                               {c.label}
                             </SelectItem>
@@ -807,7 +904,7 @@ export default function QuizBuilderPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {MOCK_SUBJECTS.map((s) => (
+                          {liveSubjects.map((s) => (
                             <SelectItem key={s} value={s}>
                               {s}
                             </SelectItem>

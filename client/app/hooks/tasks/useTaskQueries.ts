@@ -4,6 +4,7 @@ import {
   FETCH_ASSIGNMENTS_DATA,
 } from "@/app/dashboard/tasks/queries-mutations";
 import { useEffect } from "react";
+import { errorToast } from "@/components/ui/toast";
 
 export type TaskQueriesArgs = {};
 
@@ -24,15 +25,15 @@ export const useTaskQueries = ({}: TaskQueriesArgs) => {
 
   useEffect(() => {
     if (dashboardError) {
-      console.log("error in fetching datasbhoard data: ", dashboardError);
+      errorToast("Failed to load dashboard data. Please refresh.");
     }
   }, [dashboardError]);
 
   useEffect(() => {
-    if (dashboardData) {
-      console.log("lading in fetching datasbhoard data: ", dashboardData);
+    if (fetchAssignmentsError) {
+      errorToast("Failed to load assignments. Please refresh.");
     }
-  }, [dashboardData]);
+  }, [fetchAssignmentsError]);
 
   return {
     fetchDashboardData,

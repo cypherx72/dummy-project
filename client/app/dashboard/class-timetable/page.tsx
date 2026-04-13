@@ -73,7 +73,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { toast } from "sonner";
+import { showToast, errorToast } from "@/components/ui/toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -844,10 +844,9 @@ function RequestChangeTab() {
   async function onSubmit(values: ChangeRequestFormValues) {
     setIsSaving(true);
     await new Promise((r) => setTimeout(r, 800));
-    console.log("Change request submitted:", values);
+    // submitted
     setIsSaving(false);
-    toast.success("Request submitted", {
-      description: "Your timetable change request has been sent to the admin.",
+    showToast("Request submitted", "Your timetable change request has been sent to the admin.",
     });
     switchType(requestType);
   }
@@ -1354,7 +1353,7 @@ function RostersTab() {
                                 size="icon"
                                 className="hover:bg-emerald-50 dark:hover:bg-emerald-950 w-7 h-7 text-muted-foreground hover:text-emerald-600"
                                 onClick={() =>
-                                  setConfirmDialog({ student, action: "add" })
+                                  setConfirmDialog({ student, action: "add", "success")
                                 }
                               >
                                 <UserPlus className="w-4 h-4" />

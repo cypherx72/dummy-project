@@ -66,7 +66,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
-import { toast } from "sonner";
+import { showToast, errorToast } from "@/components/ui/toast";
+import { gql } from "@apollo/client";
+import { useMutation, useQuery } from "@apollo/client/react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -146,8 +148,98 @@ const gradingFormSchema = z.object({
 
 type GradingFormValues = z.infer<typeof gradingFormSchema>;
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+// ─── GraphQL ──────────────────────────────────────────────────────────────────
 
+const GET_ASSIGNMENTS = gql`
+  query GetAssignments {
+    GetAssignments {
+      status
+      message
+      assignments {
+        id
+        title
+        dueDate
+        maxMarks
+        submissionType
+        priority
+        course {
+          id
+          name
+          code
+        }
+        submissions {
+          id
+          status
+          marksObtained
+          feedback
+          submittedAt
+          attachments {
+            id
+            cloudinary_url
+            name
+          }
+        }
+        teacher {
+          id
+          name
+        }
+      }
+    }
+  }
+`;
+
+const GRADE_SUBMISSIONS = gql`
+  mutation GradeSubmissions($input: GradeSubmissionsInput!) {
+    GradeSubmissions(input: $input) {
+      status
+      message
+      code
+    }
+  }
+`;
+
+// ─── Data shape adapters ──────────────────────────────────────────────────────
+
+function deriveAssignmentStatus(a: any): Assignment["status"] {
+  const subs: any[] = a.submissions ?? [];
+  if (subs.length === 0) return "pending";
+  const graded = subs.filter((s: any) => s.status === "graded").length;
+  if (graded === 0) return "pending";
+  if (graded < subs.length) return "partial";
+  return "graded";
+}
+
+function apiToAssignment(a: any): Assignment {
+  return {
+    id: a.id,
+    title: a.title,
+    type: "assignment" as AssignmentType,
+    subject: a.course?.name ?? "—",
+    class: a.course?.code ?? "—",
+    dueDate: a.dueDate,
+    totalMarks: a.maxMarks ?? 100,
+    submittedCount: (a.submissions ?? []).filter(
+      (s: any) => s.status !== "pending",
+    ).length,
+    totalStudents: (a.submissions ?? []).length,
+    gradingMode: "marks" as GradingMode,
+    status: deriveAssignmentStatus(a),
+  };
+}
+
+function apiSubmissionsToStudentSubmissions(a: any): StudentSubmission[] {
+  return (a.submissions ?? []).map((s: any) => ({
+    studentId: s.id,
+    studentName: "Student",
+    rollNumber: s.id.slice(0, 6),
+    avatarInitials: "ST",
+    submittedAt: s.submittedAt ?? null,
+    grade: s.marksObtained != null ? String(s.marksObtained) : "",
+    isGraded: s.status === "graded",
+  }));
+}
+
+// ─── Kept only for the shape reference — not rendered ─────────────────────────
 const MOCK_ASSIGNMENTS: Assignment[] = [
   {
     id: "a1",
@@ -1011,7 +1103,24 @@ export default function GradingPage() {
   );
   const [selectedAssignment, setSelectedAssignment] =
     React.useState<Assignment | null>(null);
-  const [isSaving, setIsSaving] = React.useState(false);
+  // Raw API assignments kept in a ref so we can look up submissions by id
+  const rawAssignmentsRef = React.useRef<any[]>([]);
+
+  const { data: assignmentsData, loading: assignmentsLoading } = useQuery(
+    GET_ASSIGNMENTS,
+    {
+      onError: () => errorToast("Failed to load assignments. Please refresh."),
+    },
+  );
+
+  const [gradeSubmissionsMutation, { loading: isSaving }] =
+    useMutation(GRADE_SUBMISSIONS);
+
+  const liveAssignments: Assignment[] = React.useMemo(() => {
+    const raw: any[] = assignmentsData?.GetAssignments?.assignments ?? [];
+    rawAssignmentsRef.current = raw;
+    return raw.map(apiToAssignment);
+  }, [assignmentsData]);
 
   const form = useForm<GradingFormValues>({
     resolver: zodResolver(gradingFormSchema),
@@ -1030,7 +1139,8 @@ export default function GradingPage() {
   // Load submissions when assignment selected
   function openAssignment(assignment: Assignment) {
     setSelectedAssignment(assignment);
-    const submissions = MOCK_SUBMISSIONS[assignment.id] ?? [];
+    const raw = rawAssignmentsRef.current.find((a) => a.id === assignment.id);
+    const submissions = raw ? apiSubmissionsToStudentSubmissions(raw) : [];
     form.reset({
       assignmentId: assignment.id,
       gradingMode: assignment.gradingMode,
@@ -1047,28 +1157,54 @@ export default function GradingPage() {
     current.forEach((_, idx) =>
       form.setValue(`grades.${idx}.gradeValue`, value),
     );
-    toast.info("Bulk grade applied", {
-      description: `Set to "${value}" for all students`,
-    });
+    showToast(
+      "Bulk grade applied",
+      `Set to "${value}" for all students`,
+      "info",
+    );
   }
 
   async function onSubmit(values: GradingFormValues) {
-    setIsSaving(true);
-    await new Promise((r) => setTimeout(r, 900));
-    console.log("Grades submitted:", values);
-    setIsSaving(false);
-    toast.success("Grades saved successfully", {
-      description: `${values.grades.length} students · ${selectedAssignment?.title}`,
-    });
+    try {
+      const res = await gradeSubmissionsMutation({
+        variables: {
+          input: {
+            assignmentId: values.assignmentId,
+            gradingMode: values.gradingMode,
+            grades: values.grades,
+          },
+        },
+      });
+      if (res.data?.GradeSubmissions?.status === 200) {
+        showToast(
+          "Grades saved successfully",
+          `${values.grades.filter((g) => g.gradeValue).length} students · ${selectedAssignment?.title}`,
+          "success",
+        );
+      } else {
+        errorToast(
+          res.data?.GradeSubmissions?.message ?? "Failed to save grades.",
+        );
+      }
+    } catch {
+      errorToast("Failed to save grades. Please try again.");
+    }
   }
 
-  const filteredAssignments = MOCK_ASSIGNMENTS.filter(
+  const displayAssignments =
+    liveAssignments.length > 0 ? liveAssignments : MOCK_ASSIGNMENTS;
+  const filteredAssignments = displayAssignments.filter(
     (a) => typeFilter === "all" || a.type === typeFilter,
   );
 
-  const submissions = selectedAssignment
-    ? (MOCK_SUBMISSIONS[selectedAssignment.id] ?? [])
-    : [];
+  const rawSelected = selectedAssignment
+    ? rawAssignmentsRef.current.find((a) => a.id === selectedAssignment.id)
+    : null;
+  const submissions = rawSelected
+    ? apiSubmissionsToStudentSubmissions(rawSelected)
+    : selectedAssignment
+      ? (MOCK_SUBMISSIONS[selectedAssignment.id] ?? [])
+      : [];
 
   // ── Detail view ──────────────────────────────────────────────────────────────
   if (selectedAssignment) {
@@ -1358,19 +1494,19 @@ export default function GradingPage() {
             {
               label: "Pending",
               status: "pending",
-              count: MOCK_ASSIGNMENTS.filter((a) => a.status === "pending")
+              count: displayAssignments.filter((a) => a.status === "pending")
                 .length,
             },
             {
               label: "Partial",
               status: "partial",
-              count: MOCK_ASSIGNMENTS.filter((a) => a.status === "partial")
+              count: displayAssignments.filter((a) => a.status === "partial")
                 .length,
             },
             {
               label: "Graded",
               status: "graded",
-              count: MOCK_ASSIGNMENTS.filter((a) => a.status === "graded")
+              count: displayAssignments.filter((a) => a.status === "graded")
                 .length,
             },
           ] as const

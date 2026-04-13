@@ -7,7 +7,7 @@ import type { AuthUser } from "./types.js";
  * Returns the user so callers can use it without re-checking for null.
  */
 export function requireAuth(currentUser: AuthUser | null): AuthUser {
-  console.log(currentUser);
+  
   if (!currentUser) {
     throw new GraphQLError("You must be signed in to perform this action.", {
       extensions: { code: "UNAUTHENTICATED", status: 401 },

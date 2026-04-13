@@ -9,6 +9,7 @@ import {
   GetUploadSignatureResponse,
   UploadUrlConfigType,
 } from "@/app/dashboard/tasks/types-args";
+import { showToast, errorToast } from "@/components/ui/toast";
 
 export type useTaskMutationsTypes = {
   setUploadConfig: React.Dispatch<React.SetStateAction<UploadUrlConfigType>>;
@@ -28,11 +29,16 @@ export const useTaskMutations = ({
 
   useEffect(() => {
     const config = getUploadSignatureData?.data?.GetUploadSignature;
-
     if (config) {
       setUploadConfig(config);
     }
   }, [getUploadSignatureData, setUploadConfig]);
+
+  useEffect(() => {
+    if (getUploadSignatureError) {
+      errorToast("Failed to retrieve upload credentials. Please try again.");
+    }
+  }, [getUploadSignatureError]);
 
   const [createTask, { data, loading, error }] = useMutation(CREATE_TASK);
 
@@ -46,18 +52,21 @@ export const useTaskMutations = ({
   ] = useMutation(SUBMIT_ASSIGNMENT);
 
   useEffect(() => {
-    console.log("submitAssignmentError", submitAssignmentError);
-    console.log("submitAssignmnetData... : ", submitAssignmentResponse);
-
-    console.log();
-  }, [
-    submitAssignmentError,
-    submitAssignmentResponse,
-    submitAssignmentLoading,
-  ]);
+    if (submitAssignmentError) {
+      errorToast("Failed to submit assignment. Please try again.");
+    }
+    if (submitAssignmentResponse?.SubmitAssignment?.status === 200) {
+      showToast("Assignment submitted!", "Your work has been submitted successfully.", "success");
+    }
+  }, [submitAssignmentError, submitAssignmentResponse, submitAssignmentLoading]);
 
   useEffect(() => {
-    console.log(data, loading, error);
+    if (error) {
+      errorToast("Failed to create assignment. Please try again.");
+    }
+    if (data?.CreateTask?.status === 200) {
+      showToast("Assignment created!", "The assignment has been posted to students.", "success");
+    }
   }, [data, loading, error]);
 
   return {

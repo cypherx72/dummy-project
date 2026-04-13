@@ -29,13 +29,13 @@ import { useSession } from "@/context/session-context";
 const sharedNav = [
   {
     title: "Dashboard",
-    url: "#",
+    url: "/dashboard",
     icon: TbLayoutDashboardFilled,
     isActive: true,
   },
   {
     title: "Schedule",
-    url: "#",
+    url: "/dashboard/class-timetable",
     icon: AiFillSchedule,
   },
   {
@@ -45,18 +45,18 @@ const sharedNav = [
   },
   {
     title: "Reports",
-    url: "#",
+    url: "/dashboard/progress-report",
     icon: TbReportAnalytics,
   },
   {
     title: "Settings",
-    url: "#",
+    url: "/dashboard/admin",
     icon: IoSettings,
     items: [
-      { title: "General", url: "#" },
-      { title: "Team", url: "#" },
-      { title: "Billing", url: "#" },
-      { title: "Limits", url: "#" },
+      { title: "General", url: "/dashboard/admin" },
+      { title: "Team", url: "/dashboard/admin" },
+      { title: "Billing", url: "/dashboard/admin" },
+      { title: "Limits", url: "/dashboard/admin" },
     ],
   },
 ];
@@ -80,13 +80,13 @@ const studentNav = [
 ];
 
 const navSecondary = [
-  { title: "Support", url: "#", icon: MdContactSupport },
-  { title: "Feedback", url: "#", icon: BsSendFill },
+  { title: "Support", url: "/dashboard/communication", icon: MdContactSupport },
+  { title: "Feedback", url: "/dashboard/communication", icon: BsSendFill },
 ];
 
 const projects = [
   { name: "Chats", url: "/dashboard/chats", icon: IoChatbubbles },
-  { name: "Notes & AI", url: "#", icon: GrNotes },
+  { name: "Notes & AI", url: "/dashboard/tasks", icon: GrNotes },
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

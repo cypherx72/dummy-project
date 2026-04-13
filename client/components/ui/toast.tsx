@@ -1,4 +1,5 @@
 import { toast as sonnerToast } from "sonner";
+
 export function showToast(
   title: string,
   description?: string,
@@ -37,10 +38,15 @@ export function showToast(
   });
 }
 
-export function errorToast() {
-  sonnerToast.error("Oops Error!", {
+/**
+ * Show a generic or specific error toast.
+ * @param message  Optional custom message; falls back to a generic one.
+ */
+export function errorToast(message?: string) {
+  sonnerToast.error("Oops! Something went wrong", {
     description:
-      "We're sorry, we were unable to complete your request. You can try again or contact support team if the problem persists.",
+      message ??
+      "We're sorry, we were unable to complete your request. You can try again or contact the support team if the problem persists.",
     action: {
       label: "Dismiss",
       onClick: () => {},

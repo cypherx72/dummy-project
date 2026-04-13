@@ -74,6 +74,15 @@ submission Submission[]
 events Event[]
 assignments Assignment[]
 
+// New feature relations
+attendanceRecords    AttendanceRecord[]  @relation("StudentAttendance")
+attendanceCreated    AttendanceRecord[]  @relation("AttendanceCreatedBy")
+quizzesCreated       Quiz[]              @relation("QuizCreatedBy")
+remarksReceived      Remark[]            @relation("StudentRemarks")
+remarksGiven         Remark[]            @relation("TeacherRemarks")
+announcements        Announcement[]      @relation("AnnouncementCreator")
+meetings             Meeting[]           @relation("MeetingCreator")
+
 @@map("users")
 }
 
@@ -387,6 +396,12 @@ events Event[]
 activities Activity[]
 chat Chat?
 
+attendanceRecords AttendanceRecord[]
+quizzes           Quiz[]
+remarks           Remark[]
+announcements     Announcement[]
+meetings          Meeting[]
+
 @@map("courses")
 }
 model Event {
@@ -554,4 +569,140 @@ createdAt DateTime @default(now())
 user User @relation(fields: [userId], references: [id])
 
 @@map("tasks")
+}
+
+// ─── Attendance ──────────────────────────────────────────────────────────────
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+  excused
+}
+
+model AttendanceRecord {
+  id        String           @id @default(cuid())
+  courseId  String           @map("course_id")
+  studentId String           @map("student_id")
+  date      DateTime
+  status    AttendanceStatus @default(present)
+  note      String?
+
+  createdById String   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  course    Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student   User   @relation("StudentAttendance", fields: [studentId], references: [id], onDelete: Cascade)
+  createdBy User   @relation("AttendanceCreatedBy", fields: [createdById], references: [id])
+
+  @@unique([courseId, studentId, date])
+  @@map("attendance_records")
+}
+
+// ─── Quiz ────────────────────────────────────────────────────────────────────
+
+enum QuestionType {
+  mcq
+  true_false
+  short_answer
+  essay
+}
+
+model Quiz {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  courseId    String    @map("course_id")
+  createdById String    @map("created_by")
+  timeLimit   Int?      @map("time_limit") // minutes
+  dueDate     DateTime? @map("due_date")
+  shuffleQuestions Boolean @default(false) @map("shuffle_questions")
+  isPublished Boolean   @default(false) @map("is_published")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  course    Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdBy User           @relation("QuizCreatedBy", fields: [createdById], references: [id])
+  questions QuizQuestion[]
+
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id            String       @id @default(cuid())
+  quizId        String       @map("quiz_id")
+  type          QuestionType
+  text          String
+  marks         Float        @default(1)
+  options       Json?        // stores MCQ options as JSON array
+  correctAnswer String?      @map("correct_answer") // for true_false / short_answer
+  explanation   String?
+  order         Int          @default(0)
+
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@map("quiz_questions")
+}
+
+// ─── Remarks ─────────────────────────────────────────────────────────────────
+
+model Remark {
+  id          String   @id @default(cuid())
+  courseId    String   @map("course_id")
+  studentId   String   @map("student_id")
+  teacherId   String   @map("teacher_id")
+  content     String
+  remarkDate  DateTime @default(now()) @map("remark_date")
+  category    String   @default("general") // behaviour, academic, general
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student User   @relation("StudentRemarks", fields: [studentId], references: [id], onDelete: Cascade)
+  teacher User   @relation("TeacherRemarks", fields: [teacherId], references: [id])
+
+  @@map("remarks")
+}
+
+// ─── Announcements & Meetings ─────────────────────────────────────────────────
+
+model Announcement {
+  id        String   @id @default(cuid())
+  courseId  String?  @map("course_id")
+  createdBy String   @map("created_by")
+  title     String
+  content   String
+  priority  String   @default("normal") // normal, high, urgent
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  course  Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  creator User    @relation("AnnouncementCreator", fields: [createdBy], references: [id])
+
+  @@map("announcements")
+}
+
+model Meeting {
+  id          String    @id @default(cuid())
+  courseId    String?   @map("course_id")
+  createdBy   String    @map("created_by")
+  title       String
+  description String?
+  startTime   DateTime  @map("start_time")
+  endTime     DateTime? @map("end_time")
+  location    String?
+  meetingLink String?   @map("meeting_link")
+  type        String    @default("class") // class, office_hours, parent_meeting
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  course  Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  creator User    @relation("MeetingCreator", fields: [createdBy], references: [id])
+
+  @@map("meetings")
 }

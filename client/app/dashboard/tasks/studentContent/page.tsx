@@ -74,9 +74,45 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { toast } from "sonner";
+import { showToast, errorToast } from "@/components/ui/toast";
 import { useTaskUI } from "@/context/tasks/task-context";
 import { User } from "../../types-args";
+import { useQuery } from "@apollo/client/react";
+import { gql } from "@apollo/client";
+
+const GET_STUDENT_QUIZZES = gql`
+  query GetQuizzes {
+    GetQuizzes {
+      status
+      quizzes {
+        id
+        title
+        description
+        courseId
+        timeLimit
+        dueDate
+        shuffleQuestions
+        isPublished
+        createdAt
+        course {
+          id
+          name
+          code
+        }
+        questions {
+          id
+          type
+          text
+          marks
+          options
+          correctAnswer
+          explanation
+          order
+        }
+      }
+    }
+  }
+`;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -557,7 +593,7 @@ function AssignmentDetail({
 
   async function onSubmit(values: SubmissionFormValues) {
     if (!values.textResponse?.trim() && !fakeFile) {
-      toast.error(
+      errorToast(
         "Please add a text response or attach a file before submitting.",
       );
       return;
@@ -570,9 +606,11 @@ function AssignmentDetail({
       fakeFile || undefined,
     );
     setIsSaving(false);
-    toast.success("Assignment submitted!", {
-      description: `${assignment.title} · ${format(new Date(), "dd MMM yyyy")}`,
-    });
+    showToast(
+      "Assignment submitted!",
+      `${assignment.title} · ${format(new Date(), "dd MMM yyyy")}`,
+      "success",
+    );
   }
 
   const dueBadge = getDueBadge(assignment.dueDate, status);
@@ -1316,9 +1354,11 @@ function QuizDetail({
     });
     onCompleted(quiz.id, values, score);
     setIsSaving(false);
-    toast.success("Quiz submitted!", {
-      description: `${quiz.title} · Score: ${score}/${quiz.totalMarks}`,
-    });
+    showToast(
+      "Quiz submitted!",
+      `${quiz.title} · Score: ${score}/${quiz.totalMarks}`,
+      "success",
+    );
   }
 
   return (
@@ -1617,7 +1657,6 @@ type DetailView =
 
 export default function StudentContentPage() {
   const [assignments, setAssignments] = React.useState<Assignment[]>([]);
-  const [quizzes, setQuizzes] = React.useState<Quiz[]>(MOCK_QUIZZES);
   const [detail, setDetail] = React.useState<DetailView>(null);
   const [activeTab, setActiveTab] = React.useState("assignments");
 
@@ -1628,6 +1667,46 @@ export default function StudentContentPage() {
     fetchAssignmentsError,
   } = useTaskUI();
 
+  // Load quizzes from API; fall back to mock data if none returned yet
+  const { data: quizzesData } = useQuery(GET_STUDENT_QUIZZES, {
+    onError: () => errorToast("Failed to load quizzes."),
+  });
+
+  const quizzes: Quiz[] = React.useMemo(() => {
+    const live = quizzesData?.GetQuizzes?.quizzes ?? [];
+    if (live.length > 0) {
+      return live.map((q: any) => ({
+        id: q.id,
+        title: q.title,
+        subject: q.course?.name ?? "—",
+        course: q.course?.name ?? "—",
+        dueDate: q.dueDate ?? new Date().toISOString(),
+        timeLimit: q.timeLimit ?? 30,
+        totalMarks: (q.questions ?? []).reduce(
+          (s: number, qq: any) => s + (qq.marks ?? 1),
+          0,
+        ),
+        questionCount: (q.questions ?? []).length,
+        status: "not_started" as const,
+        questions: (q.questions ?? []).map((qq: any) => ({
+          id: qq.id,
+          type: qq.type,
+          text: qq.text,
+          marks: qq.marks,
+          options: qq.options ? JSON.parse(qq.options) : undefined,
+          correctAnswer: qq.correctAnswer,
+          explanation: qq.explanation,
+        })),
+        instructions: q.description ?? "",
+        shuffleQuestions: q.shuffleQuestions ?? false,
+        attemptedAt: null,
+        score: null,
+        answers: {},
+      }));
+    }
+    return MOCK_QUIZZES;
+  }, [quizzesData]);
+
   React.useEffect(() => {
     fetchAssignments();
   }, [fetchAssignments]);
@@ -1635,7 +1714,6 @@ export default function StudentContentPage() {
   // Wire real API data into state
   React.useEffect(() => {
     if (fetchAssignmentsData?.GetAssignments.assignments) {
-      console.log(fetchAssignmentsData.GetAssignments.assignments);
       setAssignments(fetchAssignmentsData.GetAssignments.assignments);
     }
   }, [fetchAssignmentsData]);

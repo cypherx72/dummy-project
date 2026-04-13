@@ -15,7 +15,7 @@ const cols = [
 export function RecentActivityTable() {
   const { dashboardData, dashboardLoading } = useTaskUI();
 
-  console.log(dashboardData?.GetDashboardData?.activities);
+  // activities loaded
   const activities = (dashboardData?.GetDashboardData?.activities ?? []).map(
     (a) => ({
       ...a,

@@ -1,3 +1,14 @@
+/**
+ * NAMING CONVENTION (resolved)
+ * ─────────────────────────────
+ * Server / Prisma model : Assignment
+ * GraphQL mutation name : CreateTask  (legacy – kept to avoid schema churn)
+ * Client GQL constant   : CREATE_ASSIGNMENT (re-exported as CREATE_TASK for
+ *                         backward-compat with context/hooks that use it)
+ *
+ * All NEW code should use the `Assignment` vocabulary. The `CREATE_TASK` alias
+ * will be removed in a future cleanup once every caller is migrated.
+ */
 import { gql } from "@apollo/client";
 
 export const FETCH_DASHBOARD_DATA = gql`
@@ -65,6 +76,7 @@ export const FETCH_DASHBOARD_DATA = gql`
     }
   }
 `;
+
 export const FETCH_ASSIGNMENTS_DATA = gql`
   query GetAssignments {
     GetAssignments {
@@ -121,7 +133,8 @@ export const FETCH_ASSIGNMENTS_DATA = gql`
   }
 `;
 
-export const CREATE_TASK = gql`
+/** Creates an Assignment on the server. Named CreateTask in the GraphQL schema for legacy reasons. */
+export const CREATE_ASSIGNMENT = gql`
   mutation CreateTask($input: CreateTaskInput!) {
     CreateTask(input: $input) {
       code
@@ -130,6 +143,9 @@ export const CREATE_TASK = gql`
     }
   }
 `;
+
+/** @deprecated Use CREATE_ASSIGNMENT */
+export const CREATE_TASK = CREATE_ASSIGNMENT;
 
 export const SUBMIT_ASSIGNMENT = gql`
   mutation SubmitAssignment($input: SubmitAssignmentInput!) {

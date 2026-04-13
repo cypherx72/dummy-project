@@ -192,19 +192,13 @@ export default function AssignmentSubmitPage() {
 
   const onSubmit = async (data: AssignmentFormValues) => {
     try {
-      console.log("Data received during submission: ", data);
-
       const results = await handleFileSubmit({
         data,
         configData: uploadConfig,
         fetchConfig: getUploadSignature,
       });
 
-      console.log(results);
-
-      //send func to submit an assigment
-
-      await submitAssignment({
+      const response = await submitAssignment({
         variables: {
           input: {
             attachments: results,
@@ -213,8 +207,15 @@ export default function AssignmentSubmitPage() {
           },
         },
       });
+
+      if (response?.data?.SubmitAssignment?.status === 200) {
+        showToast("Assignment submitted!", "Your work has been submitted successfully.", "success");
+      } else {
+        import("@/components/ui/toast").then(({ errorToast }) =>
+          errorToast(response?.data?.SubmitAssignment?.message ?? "Submission failed.")
+        );
+      }
     } catch (err) {
-      console.log(err);
       showToast("Network error", "Unable to reach the server.");
     }
   };
