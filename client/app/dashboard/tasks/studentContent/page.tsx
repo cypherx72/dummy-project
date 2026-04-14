@@ -185,7 +185,18 @@ interface Assignment {
  */
 function getAssignmentStatus(assignment: Assignment): AssignmentStatus {
   const sub = assignment.submissions[0];
-  if (sub) return sub.status;
+  if (sub) {
+    switch (sub.status) {
+      case "pending":
+      case "submitted":
+      case "graded":
+      case "late":
+      case "missed":
+        return sub.status;
+      default:
+        return "pending";
+    }
+  }
   const due = new Date(Number(assignment.dueDate));
   return isPast(due) && !isToday(due) ? "missed" : "pending";
 }
@@ -337,6 +348,23 @@ const QUESTION_TYPE_CONFIG: Record<
   },
 };
 
+function getAssignmentStatusConfig(status: string | null | undefined) {
+  if (
+    status &&
+    Object.prototype.hasOwnProperty.call(ASSIGNMENT_STATUS_CONFIG, status)
+  ) {
+    return ASSIGNMENT_STATUS_CONFIG[status as AssignmentStatus];
+  }
+  return ASSIGNMENT_STATUS_CONFIG.pending;
+}
+
+function getQuizStatusConfig(status: string | null | undefined) {
+  if (status && Object.prototype.hasOwnProperty.call(QUIZ_STATUS_CONFIG, status)) {
+    return QUIZ_STATUS_CONFIG[status as QuizStatus];
+  }
+  return QUIZ_STATUS_CONFIG.locked;
+}
+
 function getDueBadge(
   dueDateRaw: string,
   status: AssignmentStatus | QuizStatus,
@@ -463,11 +491,11 @@ function AssignmentDetail({
             <Badge
               className={cn(
                 "gap-1 text-xs",
-                ASSIGNMENT_STATUS_CONFIG[status].badgeClass,
+                getAssignmentStatusConfig(status).badgeClass,
               )}
             >
-              {ASSIGNMENT_STATUS_CONFIG[status].icon}
-              {ASSIGNMENT_STATUS_CONFIG[status].label}
+              {getAssignmentStatusConfig(status).icon}
+              {getAssignmentStatusConfig(status).label}
             </Badge>
           </div>
           <div className="flex flex-wrap items-center gap-3 mt-1">
@@ -882,7 +910,7 @@ function AssignmentsTab({
           {filtered.map((a) => {
             const status = getAssignmentStatus(a);
             const submission = a.submissions[0] ?? null;
-            const cfg = ASSIGNMENT_STATUS_CONFIG[status];
+            const cfg = getAssignmentStatusConfig(status);
             const dueBadge = getDueBadge(a.dueDate, status);
             return (
               <Card
@@ -1024,7 +1052,7 @@ function QuizzesTab({
 
       <div className="space-y-3">
         {filtered.map((q) => {
-          const cfg = QUIZ_STATUS_CONFIG[q.status];
+          const cfg = getQuizStatusConfig(q.status);
           const dueBadge = getDueBadge(q.dueDate, q.status);
           const canClick = q.status !== "locked";
           return (
@@ -1208,11 +1236,11 @@ function QuizDetail({
             <Badge
               className={cn(
                 "gap-1 text-xs",
-                QUIZ_STATUS_CONFIG[quiz.status].badgeClass,
+                getQuizStatusConfig(quiz.status).badgeClass,
               )}
             >
-              {QUIZ_STATUS_CONFIG[quiz.status].icon}
-              {QUIZ_STATUS_CONFIG[quiz.status].label}
+              {getQuizStatusConfig(quiz.status).icon}
+              {getQuizStatusConfig(quiz.status).label}
             </Badge>
           </div>
           <p className="mt-0.5 text-muted-foreground text-sm">
