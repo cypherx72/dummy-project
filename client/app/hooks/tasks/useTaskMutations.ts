@@ -2,13 +2,13 @@ import {
   GET_UPLOAD_SIGNATURE,
   CREATE_TASK,
   SUBMIT_ASSIGNMENT,
-} from "@/app/dashboard/tasks/queries-mutations";
+} from "@/app/tasks/_mutations/taskMutations";
 import { useMutation } from "@apollo/client/react";
 import React, { useEffect } from "react";
 import {
   GetUploadSignatureResponse,
   UploadUrlConfigType,
-} from "@/app/dashboard/tasks/types-args";
+} from "@/app/tasks/_utils/taskTypes";
 import { showToast, errorToast } from "@/components/ui/toast";
 
 export type useTaskMutationsTypes = {
