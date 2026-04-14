@@ -1,17 +1,21 @@
 "use client";
 
 import { useContext, createContext } from "react";
-import { TaskUIContextType } from "@/app/dashboard/tasks/types-args";
+import { AssignmentUIContextType } from "@/app/tasks/_utils/taskTypes";
 
-export const TaskUIContext = createContext<undefined | TaskUIContextType>(
+export const AssignmentUIContext = createContext<undefined | AssignmentUIContextType>(
   undefined,
 );
 
-export const useTaskUI = () => {
-  const ctx = useContext(TaskUIContext);
+export const useAssignmentUI = () => {
+  const ctx = useContext(AssignmentUIContext);
 
   if (!ctx) {
     throw new Error("Cannot ....");
   }
   return ctx;
 };
+
+
+export const TaskUIContext = AssignmentUIContext;
+export const useTaskUI = useAssignmentUI;

@@ -4,11 +4,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FiClock, FiBook } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
 import { HiDotsVertical } from "react-icons/hi";
-import { useTaskUI } from "@/context/tasks/task-context";
+import { useAssignmentUI } from "@/context/tasks/task-context";
 import { formatDistanceToNow } from "date-fns";
 
 export default function NotificationsCard() {
-  const { dashboardData, dashboardLoading } = useTaskUI();
+  const { dashboardData, dashboardLoading } = useAssignmentUI();
   const notifications: any[] =
     dashboardData?.GetDashboardData?.notifications ?? [];
 

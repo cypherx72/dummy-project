@@ -10,7 +10,7 @@ import {
   CardDescription,
   CardAction,
 } from "@/components/ui/card";
-import { useTaskUI } from "@/context/tasks/task-context";
+import { useAssignmentUI } from "@/context/tasks/task-context";
 
 // Fallback placeholder images cycled by index
 const PLACEHOLDER_IMAGES = [
@@ -64,7 +64,7 @@ function CourseCard({ course, index }: { course: any; index: number }) {
 }
 
 export default function CoursesSection() {
-  const { dashboardData, dashboardLoading } = useTaskUI();
+  const { dashboardData, dashboardLoading } = useAssignmentUI();
   const courses: any[] = dashboardData?.GetDashboardData?.courses ?? [];
 
   return (

@@ -1,11 +1,11 @@
 "use client";
 
-import { TaskUIProvider } from "@/context/tasks/provider";
+import { AssignmentProvider } from "@/context/tasks/provider";
 
 export default function MyCoursesLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <TaskUIProvider>{children}</TaskUIProvider>;
+  return <AssignmentProvider>{children}</AssignmentProvider>;
 }

@@ -4,7 +4,7 @@ import { type contextType } from "../../lib/types.js";
 import { CreateTaskSchema, type CreateTaskValues } from "./schema.js";
 import { requireAuth, requireRole } from "../../lib/guards.js";
 
-export async function CreateTask(
+export async function CreateAssignment(
   _: unknown,
   { input }: { input: CreateTaskValues },
   context: contextType,
@@ -58,15 +58,15 @@ export async function CreateTask(
 
     return {
       status: 200,
-      message: "Task created successfully.",
-      code: "TASK_CREATED",
+      message: "Assignment created successfully.",
+      code: "ASSIGNMENT_CREATED",
     };
   } catch (err) {
     if (err instanceof GraphQLError) throw err;
 
     console.log(err);
     throw GraphQLCustomLError({
-      message: "We couldn't create the task. Please try again later.",
+      message: "We couldn't create the assignment. Please try again later.",
       status: 500,
       code: "SERVER_ERROR",
     });

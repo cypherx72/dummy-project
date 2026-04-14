@@ -39,7 +39,7 @@ import {
 
 import { AssignmentFormValues, AssignmentSchema } from "@/config/ZodSchema";
 import { showToast } from "@/components/ui/toast";
-import { useTaskUI } from "@/context/tasks/task-context";
+import { useAssignmentUI } from "@/context/tasks/task-context";
 import { cn } from "@/lib/utils";
 import { handleFileSubmit } from "../../uploadToCloudinary";
 
@@ -149,7 +149,7 @@ export default function AssignmentSubmitPage() {
     uploadConfig,
     getUploadSignature,
     submitAssignment,
-  } = useTaskUI();
+  } = useAssignmentUI();
 
   // Derive assignment from context
   const assignment: Assignment | null = (() => {

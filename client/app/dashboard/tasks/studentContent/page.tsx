@@ -68,6 +68,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
@@ -75,7 +76,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { showToast, errorToast } from "@/components/ui/toast";
-import { useTaskUI } from "@/context/tasks/task-context";
+import { useAssignmentUI } from "@/context/tasks/task-context";
 import { User } from "../../types-args";
 import { useQuery } from "@apollo/client/react";
 import { gql } from "@apollo/client";
@@ -243,181 +244,7 @@ function buildQuizSchema(questions: QuizQuestion[]) {
 
 type SubmissionFormValues = z.infer<typeof submissionSchema>;
 
-// ─── Mock Quiz Data (assignments now come from API) ───────────────────────────
-
-const MOCK_QUIZZES: Quiz[] = [
-  {
-    id: "quiz-1",
-    title: "Algebra – Mid-Term Quiz",
-    subject: "Mathematics",
-    teacher: "Mrs. Kavitha Nair",
-    dueDate: "2025-04-08",
-    postedDate: "2025-03-26",
-    status: "available",
-    durationMinutes: 20,
-    totalMarks: 15,
-    questions: [
-      {
-        id: "q1",
-        type: "mcq",
-        marks: 2,
-        question: "What are the roots of the equation x² – 5x + 6 = 0?",
-        options: [
-          "x = 2, x = 3",
-          "x = –2, x = –3",
-          "x = 1, x = 6",
-          "x = –1, x = –6",
-        ],
-      },
-      {
-        id: "q2",
-        type: "true_false",
-        marks: 1,
-        question:
-          "The quadratic formula can be used to solve any quadratic equation.",
-      },
-      {
-        id: "q3",
-        type: "mcq",
-        marks: 2,
-        question:
-          "Which of the following is the vertex form of a quadratic equation?",
-        options: [
-          "y = ax² + bx + c",
-          "y = a(x – h)² + k",
-          "y = (x + p)(x + q)",
-          "y = mx + b",
-        ],
-      },
-      {
-        id: "q4",
-        type: "short_answer",
-        marks: 3,
-        question: "Factorise the expression: x² + 7x + 12. Show your working.",
-      },
-      {
-        id: "q5",
-        type: "mcq",
-        marks: 2,
-        question: "The discriminant of ax² + bx + c = 0 is:",
-        options: ["b² – 4ac", "b² + 4ac", "–b ± √(b²–4ac)", "2a"],
-      },
-      {
-        id: "q6",
-        type: "true_false",
-        marks: 1,
-        question:
-          "If the discriminant is negative, the quadratic has two real roots.",
-      },
-      {
-        id: "q7",
-        type: "short_answer",
-        marks: 4,
-        question:
-          "Solve using the quadratic formula: 2x² – 4x – 6 = 0. Show all steps.",
-      },
-    ],
-  },
-  {
-    id: "quiz-2",
-    title: "World War I – Quick Check",
-    subject: "History",
-    teacher: "Mr. Deepak Verma",
-    dueDate: "2025-03-30",
-    postedDate: "2025-03-22",
-    status: "completed",
-    durationMinutes: 15,
-    totalMarks: 10,
-    marksObtained: 8,
-    attemptedOn: "2025-03-25",
-    questions: [
-      {
-        id: "q1",
-        type: "mcq",
-        marks: 2,
-        question: "In which year did World War I begin?",
-        options: ["1912", "1914", "1916", "1918"],
-        correctAnswer: "1914",
-      },
-      {
-        id: "q2",
-        type: "true_false",
-        marks: 1,
-        question:
-          "The assassination of Archduke Franz Ferdinand triggered WWI.",
-        correctAnswer: "true",
-      },
-      {
-        id: "q3",
-        type: "mcq",
-        marks: 2,
-        question:
-          "Which alliance included Germany, Austria-Hungary, and Italy?",
-        options: [
-          "Triple Entente",
-          "Allied Powers",
-          "Triple Alliance",
-          "Central Powers",
-        ],
-        correctAnswer: "Triple Alliance",
-      },
-      {
-        id: "q4",
-        type: "short_answer",
-        marks: 3,
-        question:
-          "Name two significant consequences of the Treaty of Versailles.",
-      },
-      {
-        id: "q5",
-        type: "true_false",
-        marks: 1,
-        question: "The United States entered WWI in 1917.",
-        correctAnswer: "true",
-      },
-      {
-        id: "q6",
-        type: "mcq",
-        marks: 1,
-        question: "WWI ended on which date?",
-        options: ["11 Nov 1918", "28 June 1919", "11 Nov 1919", "4 Aug 1914"],
-        correctAnswer: "11 Nov 1918",
-      },
-    ],
-    submittedAnswers: {
-      q1: "1914",
-      q2: "true",
-      q3: "Triple Alliance",
-      q4: "Germany lost territory and had to pay reparations.",
-      q5: "true",
-      q6: "11 Nov 1918",
-    },
-  },
-  {
-    id: "quiz-3",
-    title: "Light & Optics – Concept Check",
-    subject: "Science",
-    teacher: "Mrs. Preethi Rao",
-    dueDate: "2025-03-18",
-    postedDate: "2025-03-11",
-    status: "missed",
-    durationMinutes: 10,
-    totalMarks: 8,
-    questions: [],
-  },
-  {
-    id: "quiz-4",
-    title: "Figures of Speech – English Quiz",
-    subject: "English",
-    teacher: "Ms. Nandini Bhatt",
-    dueDate: "2025-04-15",
-    postedDate: "2025-03-28",
-    status: "locked",
-    durationMinutes: 25,
-    totalMarks: 20,
-    questions: [],
-  },
-];
+// ─── Quiz Data comes from API only ─────────────────────────────────────────────
 
 // ─── Config & Helpers ─────────────────────────────────────────────────────────
 
@@ -1665,10 +1492,14 @@ export default function StudentContentPage() {
     fetchAssignmentsData,
     fetchAssignmentsLoading,
     fetchAssignmentsError,
-  } = useTaskUI();
+  } = useAssignmentUI();
 
   // Load quizzes from API; fall back to mock data if none returned yet
-  const { data: quizzesData } = useQuery(GET_STUDENT_QUIZZES, {
+  const {
+    data: quizzesData,
+    loading: quizzesLoading,
+    error: quizzesError,
+  } = useQuery(GET_STUDENT_QUIZZES, {
     onError: () => errorToast("Failed to load quizzes."),
   });
 
@@ -1704,7 +1535,7 @@ export default function StudentContentPage() {
         answers: {},
       }));
     }
-    return MOCK_QUIZZES;
+    return [];
   }, [quizzesData]);
 
   React.useEffect(() => {
@@ -1877,10 +1708,22 @@ export default function StudentContentPage() {
         </TabsContent>
 
         <TabsContent value="quizzes" className="mt-6">
-          <QuizzesTab
-            quizzes={quizzes}
-            onSelect={(q) => setDetail({ kind: "quiz", item: q })}
-          />
+          {quizzesLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="w-full h-16" />
+              <Skeleton className="w-full h-16" />
+              <Skeleton className="w-full h-16" />
+            </div>
+          ) : quizzesError ? (
+            <div className="flex justify-center items-center py-16 text-destructive text-sm">
+              Failed to load quizzes. Please try again.
+            </div>
+          ) : (
+            <QuizzesTab
+              quizzes={quizzes}
+              onSelect={(q) => setDetail({ kind: "quiz", item: q })}
+            />
+          )}
         </TabsContent>
       </Tabs>
     </div>

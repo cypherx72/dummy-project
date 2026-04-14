@@ -2,12 +2,12 @@
 
 import { CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useTaskUI } from "@/context/tasks/task-context";
+import { useAssignmentUI } from "@/context/tasks/task-context";
 import { format } from "date-fns";
 
 export default function TodaysTasks() {
-  const { dashboardData, dashboardLoading } = useTaskUI();
-  const tasks: any[] = dashboardData?.GetDashboardData?.tasks ?? [];
+  const { dashboardData, dashboardLoading } = useAssignmentUI();
+  const todayAssignments = (dashboardData as { GetDashboardData?: { todayAssignments?: Array<{ id: string; title: string; dueTime?: string; completed: boolean }> } } | undefined)?.GetDashboardData?.todayAssignments ?? [];
 
   return (
     <div className="flex flex-col gap-2 py-1 border-none w-full">
@@ -21,10 +21,10 @@ export default function TodaysTasks() {
         {dashboardLoading && (
           <p className="text-muted-foreground text-xs px-3">Loading…</p>
         )}
-        {!dashboardLoading && tasks.length === 0 && (
+        {!dashboardLoading && todayAssignments.length === 0 && (
           <p className="text-muted-foreground text-xs px-3">No tasks for today.</p>
         )}
-        {tasks.map((task) => (
+        {todayAssignments.map((task) => (
           <div
             key={task.id}
             className="flex justify-between items-center hover:bg-white/5 p-3 border border-white/10 rounded-lg transition"

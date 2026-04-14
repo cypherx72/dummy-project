@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { TaskUIContext } from "./task-context";
+import { useState } from "react";
+import { AssignmentUIContext } from "./task-context";
 import { useTaskQueries } from "@/app/hooks/tasks/useTaskQueries";
 import { useTaskMutations } from "@/app/hooks/tasks/useTaskMutations";
-import { UploadUrlConfigType } from "@/app/dashboard/tasks/types-args";
+import { UploadUrlConfigType } from "@/app/tasks/_utils/taskTypes";
 
-export const TaskUIProvider = ({ children }: { children: React.ReactNode }) => {
+export const AssignmentProvider = ({ children }: { children: React.ReactNode }) => {
   const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>(
     undefined,
   );
@@ -31,6 +31,7 @@ export const TaskUIProvider = ({ children }: { children: React.ReactNode }) => {
 
   const {
     getUploadSignature,
+    createAssignment,
     createTask,
     getUploadSignatureData,
     submitAssignment,
@@ -42,7 +43,7 @@ export const TaskUIProvider = ({ children }: { children: React.ReactNode }) => {
   });
 
   return (
-    <TaskUIContext
+    <AssignmentUIContext
       value={{
         selectedTaskId,
         setSelectedTaskId,
@@ -56,7 +57,8 @@ export const TaskUIProvider = ({ children }: { children: React.ReactNode }) => {
         uploadConfig,
         setUploadConfig,
 
-        createTask,
+        createAssignment,
+    createTask,
         fetchDashboardData,
         dashboardData,
         dashboardLoading,
@@ -73,6 +75,9 @@ export const TaskUIProvider = ({ children }: { children: React.ReactNode }) => {
       }}
     >
       {children}
-    </TaskUIContext>
+    </AssignmentUIContext>
   );
 };
+
+
+export const TaskUIProvider = AssignmentProvider;

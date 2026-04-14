@@ -9,7 +9,7 @@ import { CursorPagination } from "./chat/pagination.js";
 import { DeleteMessage } from "./chat/delete-message.js";
 import { PinMessage } from "./chat/pin-message.js";
 import { StarMessage } from "./chat/star-message.js";
-import { CreateTask } from "./tasks/createTask.js";
+import { CreateAssignment } from "./tasks/createTask.js";
 import { GetDashboardData } from "./tasks/getDashboardData.js";
 import { GetUploadSignature } from "./tasks/getUploadSignature.js";
 import { GetAssignments } from "./tasks/getAssignmentsDue.js";
@@ -80,7 +80,7 @@ export const resolvers = {
     MarkChatAsRead,
 
     GetUploadSignature,
-    CreateTask,
+    CreateAssignment,
     SubmitAssignment,
     GradeSubmissions,
 

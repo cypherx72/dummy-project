@@ -40,7 +40,7 @@ const sharedNav = [
   },
   {
     title: "Tasks",
-    url: "/dashboard/tasks",
+    url: "/tasks",
     icon: GrTasks,
   },
   {
@@ -86,7 +86,7 @@ const navSecondary = [
 
 const projects = [
   { name: "Chats", url: "/dashboard/chats", icon: IoChatbubbles },
-  { name: "Notes & AI", url: "/dashboard/tasks", icon: GrNotes },
+  { name: "Notes & AI", url: "/tasks", icon: GrNotes },
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
