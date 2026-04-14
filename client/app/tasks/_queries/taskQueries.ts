@@ -50,7 +50,7 @@ export const FETCH_DASHBOARD_DATA = gql`
           code
         }
       }
-      todayAssignments {
+      tasks {
         id
         title
         dueTime

@@ -1,4 +1,4 @@
-export type AssignmentUIContextType = {
+export type TaskUIContextType = {
   selectedTaskId?: string;
   setSelectedTaskId: (id: string) => void;
 
@@ -13,7 +13,6 @@ export type AssignmentUIContextType = {
   uploadConfig : unknown;
   setUploadConfig : unknown;
   fetchDashboardData : unknown;
-  createAssignment : unknown;
   createTask : unknown;
   fetchAssignments : unknown;
 

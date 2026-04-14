@@ -1,6 +1,6 @@
 "use client";
 
-import { AssignmentProvider } from "@/context/tasks/provider";
+import { TaskUIProvider } from "@/context/tasks/provider";
 import { useSession } from "@/context/session-context";
 import { TasksShell } from "./_components/TasksShell";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ export default function TasksLayout({
   const { user, loading } = useSession();
 
   return (
-    <AssignmentProvider>
+    <TaskUIProvider>
       <TasksShell>
         {loading ? (
           <div className="animate-pulse border rounded-md h-[50vh]" />
@@ -42,6 +42,6 @@ export default function TasksLayout({
           <RoleErrorState />
         )}
       </TasksShell>
-    </AssignmentProvider>
+    </TaskUIProvider>
   );
 }

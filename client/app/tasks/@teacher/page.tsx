@@ -9,11 +9,11 @@ import { RecentActivityTable } from "@/app/dashboard/tasks/recent-activity-tab";
 import TodaysTasks from "@/app/dashboard/tasks/today-task";
 import CalendarEvents from "@/app/dashboard/tasks/calendar-events";
 import UserCard from "@/app/dashboard/tasks/user-card";
-import { useAssignmentUI } from "@/context/tasks/task-context";
+import { useTaskUI } from "@/context/tasks/task-context";
 import { useEffect } from "react";
 
 export default function TeacherTasksPage() {
-  const { fetchDashboardData } = useAssignmentUI();
+  const { fetchDashboardData } = useTaskUI();
 
   useEffect(() => {
     fetchDashboardData();

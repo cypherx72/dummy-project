@@ -5,12 +5,10 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 const links = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/tasks", label: "Overview" },
-  { href: "/tasks/class-schedule", label: "Class Schedule" },
-  { href: "/tasks/attendance", label: "Attendance" },
-  { href: "/tasks/assignments-and-quizzes", label: "Assignments & Quizzes" },
-  { href: "/tasks/quizzes", label: "Quiz Workspace" },
+  { href: "/dashboard", label: "Dashboard Terminal" },
+  { href: "/tasks", label: "Tasks Home" },
+  { href: "/dashboard/chats", label: "Chats" },
+  { href: "/dashboard/course-management", label: "Course Management" },
 ];
 
 export function TasksShell({ children }: { children: React.ReactNode }) {
@@ -22,11 +20,7 @@ export function TasksShell({ children }: { children: React.ReactNode }) {
         {links.map((link) => {
           const active = pathname === link.href;
           return (
-            <Button
-              key={link.href}
-              asChild
-              variant={active ? "default" : "outline"}
-            >
+            <Button key={link.href} asChild variant={active ? "default" : "outline"}>
               <Link href={link.href}>{link.label}</Link>
             </Button>
           );

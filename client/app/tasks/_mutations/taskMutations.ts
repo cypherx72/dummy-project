@@ -1,8 +1,8 @@
 import { gql } from "@apollo/client";
 
 export const CREATE_ASSIGNMENT = gql`
-  mutation CreateAssignment($input: CreateAssignmentInput!) {
-    CreateAssignment(input: $input) {
+  mutation CreateTask($input: CreateTaskInput!) {
+    CreateTask(input: $input) {
       code
       message
       status

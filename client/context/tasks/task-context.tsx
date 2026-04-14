@@ -1,7 +1,7 @@
 "use client";
 
 import { useContext, createContext } from "react";
-import { AssignmentUIContextType } from "@/app/tasks/_utils/taskTypes";
+import { TaskUIContextType } from "@/app/tasks/_utils/taskTypes";
 
 export const AssignmentUIContext = createContext<undefined | AssignmentUIContextType>(
   undefined,
