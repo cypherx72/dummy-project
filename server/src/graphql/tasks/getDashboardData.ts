@@ -3,19 +3,19 @@ import { GetRecentActivities } from "../tasks/getRecentActivities.js";
 import { GetAssignments } from "../tasks/getAssignmentsDue.js";
 import { GetNotifications } from "../tasks/getNotifications.js";
 import { GetUpcomingEvents } from "../tasks/getUpcomingEvents.js";
-import { GetTodaysTasks } from "../tasks/getTodayTasks.js";
+import { GetTodayAssignments } from "../tasks/getTodayTasks.js";
 
 import { type contextType } from "../../lib/types.js";
 
 export async function GetDashboardData(_: any, __: any, context: contextType) {
-  const [courses, activities, assignments, notifications, events, tasks] =
+  const [courses, activities, assignments, notifications, events, todayAssignments] =
     await Promise.all([
       GetUserCourses(_, {}, context),
       GetRecentActivities(_, {}, context),
       GetAssignments(_, {}, context),
       GetNotifications(_, {}, context),
       GetUpcomingEvents(_, {}, context),
-      GetTodaysTasks(_, {}, context),
+      GetTodayAssignments(_, {}, context),
     ]);
 
   return {
@@ -27,6 +27,6 @@ export async function GetDashboardData(_: any, __: any, context: contextType) {
     assignments: assignments.assignments,
     notifications: notifications.notifications,
     events: events.events,
-    tasks: tasks.tasks,
+    todayAssignments: todayAssignments.todayAssignments,
   };
 }

@@ -244,7 +244,7 @@ input SubmitAssignmentInput {
 }
 
 
-input CreateTaskInput{ 
+input CreateAssignmentInput{ 
   courseId: String!
     time: String!
     title: String!
@@ -366,7 +366,7 @@ type UploadSignatureResponse {
   folder: String!
 }
 
-type Task {
+type TodayAssignment {
   id: ID!
   userId: ID!
   title: String!
@@ -395,7 +395,7 @@ type DashboardResponse {
   assignments: [Assignment!]!
   notifications: [Notification!]!
   events: [Event!]!
-  tasks: [Task!]!
+  todayAssignments: [TodayAssignment!]!
 }
 
 #########################
@@ -528,7 +528,7 @@ type Mutation {
   MarkChatAsRead(input: MarkChatAsReadInput!): MarkChatAsReadResponse!
 
   GetUploadSignature: UploadSignatureResponse!
-  CreateTask(input: CreateTaskInput!): DefaultResponse!
+  CreateAssignment(input: CreateAssignmentInput!): DefaultResponse!
   SubmitAssignment(input: SubmitAssignmentInput!): DefaultResponse!
 
   # Enrollment mutations

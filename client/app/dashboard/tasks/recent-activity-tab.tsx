@@ -1,6 +1,6 @@
 "use client";
 
-import { useTaskUI } from "@/context/tasks/task-context";
+import { useAssignmentUI } from "@/context/tasks/task-context";
 import { formatDistanceToNow } from "date-fns";
 
 const colClass = "px-4 py-3 text-left text-sm";
@@ -13,7 +13,7 @@ const cols = [
 ];
 
 export function RecentActivityTable() {
-  const { dashboardData, dashboardLoading } = useTaskUI();
+  const { dashboardData, dashboardLoading } = useAssignmentUI();
 
   // activities loaded
   const activities = (dashboardData?.GetDashboardData?.activities ?? []).map(

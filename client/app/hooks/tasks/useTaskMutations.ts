@@ -40,7 +40,7 @@ export const useTaskMutations = ({
     }
   }, [getUploadSignatureError]);
 
-  const [createTask, { data, loading, error }] = useMutation(CREATE_TASK);
+  const [createAssignment, { data, loading, error }] = useMutation(CREATE_TASK);
 
   const [
     submitAssignment,
@@ -64,7 +64,7 @@ export const useTaskMutations = ({
     if (error) {
       errorToast("Failed to create assignment. Please try again.");
     }
-    if (data?.CreateTask?.status === 200) {
+    if (data?.CreateAssignment?.status === 200) {
       showToast("Assignment created!", "The assignment has been posted to students.", "success");
     }
   }, [data, loading, error]);
@@ -74,7 +74,8 @@ export const useTaskMutations = ({
     getUploadSignatureData,
     getUploadSignatureError,
     getUploadSignatureLoading,
-    createTask,
+    createAssignment,
+    createTask: createAssignment,
 
     submitAssignment,
     submitAssignmentError,

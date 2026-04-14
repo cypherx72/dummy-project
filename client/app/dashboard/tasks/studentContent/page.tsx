@@ -76,7 +76,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { showToast, errorToast } from "@/components/ui/toast";
-import { useTaskUI } from "@/context/tasks/task-context";
+import { useAssignmentUI } from "@/context/tasks/task-context";
 import { User } from "../../types-args";
 import { useQuery } from "@apollo/client/react";
 import { gql } from "@apollo/client";
@@ -1492,7 +1492,7 @@ export default function StudentContentPage() {
     fetchAssignmentsData,
     fetchAssignmentsLoading,
     fetchAssignmentsError,
-  } = useTaskUI();
+  } = useAssignmentUI();
 
   // Load quizzes from API; fall back to mock data if none returned yet
   const {

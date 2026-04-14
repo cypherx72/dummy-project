@@ -11,7 +11,7 @@ import { CreateTaskSchema, CreateTaskValues } from "../schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ExtendSwitch } from "./switch";
-import { useTaskUI } from "@/context/tasks/task-context";
+import { useAssignmentUI } from "@/context/tasks/task-context";
 import { errorToast, showToast } from "@/components/ui/toast";
 import { useEnrollment } from "@/app/hooks/tasks/useEnrollment";
 import {
@@ -24,7 +24,7 @@ import {
 import { Label } from "@/components/ui/label";
 
 export function CreateTaskForm() {
-  const { getUploadSignature, uploadConfig, createTask } = useTaskUI();
+  const { getUploadSignature, uploadConfig, createAssignment } = useAssignmentUI();
   const { fetchTeacherCourses, teacherCourses, teacherCoursesLoading } =
     useEnrollment();
 
@@ -67,11 +67,11 @@ export function CreateTaskForm() {
         fetchConfig: getUploadSignature,
       });
 
-      data.attachments = results as any;
+      data.attachments = results as CreateTaskValues["attachments"];
 
-      const response = await createTask({ variables: { input: data } });
+      const response = await createAssignment({ variables: { input: data } });
 
-      if (response?.data?.CreateTask?.status === 200) {
+      if (response?.data?.CreateAssignment?.status === 200) {
         showToast(
           "Assignment created!",
           "The assignment has been posted to students.",
@@ -80,11 +80,12 @@ export function CreateTaskForm() {
         form.reset();
       } else {
         errorToast(
-          response?.data?.CreateTask?.message ?? "Failed to create assignment.",
+          response?.data?.CreateAssignment?.message ?? "Failed to create assignment.",
         );
       }
-    } catch (err: any) {
-      errorToast(err?.message ?? "An unexpected error occurred.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "An unexpected error occurred.";
+      errorToast(message);
     }
   };
 

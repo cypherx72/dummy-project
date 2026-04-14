@@ -11,11 +11,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { GoCommentDiscussion } from "react-icons/go";
-import { useTaskUI } from "@/context/tasks/task-context";
+import { useAssignmentUI } from "@/context/tasks/task-context";
 import { format } from "date-fns";
 
 export default function CalendarEvents() {
-  const { dashboardData, dashboardLoading } = useTaskUI();
+  const { dashboardData, dashboardLoading } = useAssignmentUI();
   const events: any[] = dashboardData?.GetDashboardData?.events ?? [];
 
   return (

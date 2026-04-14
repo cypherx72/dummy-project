@@ -19,12 +19,12 @@ import {
 } from "@/components/ui/carousel";
 import { VscBellDot } from "react-icons/vsc";
 import { FiCalendar, FiBook } from "react-icons/fi";
-import { useTaskUI } from "@/context/tasks/task-context";
+import { useAssignmentUI } from "@/context/tasks/task-context";
 import { format, formatDistanceToNow } from "date-fns";
 import { useRouter } from "next/navigation";
 
 export default function AssignmentsCard() {
-  const { dashboardData, dashboardLoading } = useTaskUI();
+  const { dashboardData, dashboardLoading } = useAssignmentUI();
   const assignments = (dashboardData?.GetDashboardData?.assignments ?? []).map(
     (a) => ({
       ...a,

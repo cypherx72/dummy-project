@@ -38,7 +38,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useEnrollment } from "@/app/hooks/tasks/useEnrollment";
-import { useTaskUI } from "@/context/tasks/task-context";
+import { useAssignmentUI } from "@/context/tasks/task-context";
 import { useSession } from "@/context/session-context";
 import { formatDistanceToNow, format } from "date-fns";
 
@@ -414,7 +414,7 @@ function DepartmentSection({
 
 export default function MyCoursesPage() {
   const { user } = useSession();
-  const { dashboardData, dashboardLoading, fetchDashboardData } = useTaskUI();
+  const { dashboardData, dashboardLoading, fetchDashboardData } = useAssignmentUI();
   const {
     fetchDepartments,
     departments,

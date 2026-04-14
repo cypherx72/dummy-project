@@ -3,7 +3,7 @@ import { GraphQLError } from "graphql";
 import { type contextType } from "../../lib/types.js";
 import { requireAuth } from "../../lib/guards.js";
 
-export async function GetTodaysTasks(_: any, __: any, context: contextType) {
+export async function GetTodayAssignments(_: any, __: any, context: contextType) {
   const { prisma, currentUser } = context;
   const user = requireAuth(currentUser);
 
@@ -14,7 +14,7 @@ export async function GetTodaysTasks(_: any, __: any, context: contextType) {
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
-    const tasks = await prisma.task.findMany({
+    const todayAssignments = await prisma.task.findMany({
       where: {
         userId: user.id,
         dueTime: {
@@ -29,16 +29,16 @@ export async function GetTodaysTasks(_: any, __: any, context: contextType) {
 
     return {
       status: 200,
-      message: "Today's tasks fetched successfully.",
-      code: "TODAYS_TASKS_FETCHED",
-      tasks,
+      message: "Today's assignments fetched successfully.",
+      code: "TODAY_ASSIGNMENTS_FETCHED",
+      todayAssignments,
     };
   } catch (err) {
     console.log(err);
     if (err instanceof GraphQLError) throw err;
 
     throw GraphQLCustomLError({
-      message: "We couldn't fetch today's tasks. Please try again later.",
+      message: "We couldn't fetch today's assignments. Please try again later.",
       status: 500,
       code: "SERVER_ERROR",
     });
