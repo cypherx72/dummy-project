@@ -94,7 +94,7 @@ export default function AssignmentsCard() {
                       </span>
                       <Button
                         onClick={() =>
-                          router.push(`tasks/upload/${assignment.id}`)
+                          router.push(`/tasks/upload/${assignment.id}`)
                         }
                       >
                         Upload

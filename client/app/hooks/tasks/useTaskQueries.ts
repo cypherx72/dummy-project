@@ -2,11 +2,11 @@ import { useLazyQuery } from "@apollo/client/react";
 import {
   FETCH_DASHBOARD_DATA,
   FETCH_ASSIGNMENTS_DATA,
-} from "@/app/dashboard/tasks/queries-mutations";
+} from "@/app/tasks/_queries/taskQueries";
 import { useEffect } from "react";
 import { errorToast } from "@/components/ui/toast";
 
-export type TaskQueriesArgs = {};
+export type TaskQueriesArgs = Record<string, never>;
 
 export const useTaskQueries = ({}: TaskQueriesArgs) => {
   const [

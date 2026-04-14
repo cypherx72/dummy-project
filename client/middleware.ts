@@ -1,22 +1,18 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PROTECTED_PREFIX = "/dashboard";
-const AUTH_PAGES = [
-  "/auth/signin",
-  "/auth/forgot-password",
-  "/auth/reset-password",
-  "/auth/activate-account",
-  "/auth/verify-account",
-];
+const PROTECTED_PREFIXES = ["/dashboard", "/tasks"];
 const SERVER_SESSION_URL =
   process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:4000";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Only protect dashboard routes
-  if (!pathname.startsWith(PROTECTED_PREFIX)) {
+  const isProtected = PROTECTED_PREFIXES.some((prefix) =>
+    pathname.startsWith(prefix),
+  );
+
+  if (!isProtected) {
     return NextResponse.next();
   }
 
@@ -26,15 +22,14 @@ export async function middleware(request: NextRequest) {
   try {
     const res = await fetch(`${SERVER_SESSION_URL}/auth/session`, {
       headers: { cookie: cookieHeader },
-      // 3-second budget; don't block the user indefinitely
       signal: AbortSignal.timeout(3000),
     });
+
     if (res.ok) {
       const data = await res.json();
       isAuthenticated = data?.authenticated === true;
     }
   } catch {
-    // Network error — fail closed: redirect to sign-in
     isAuthenticated = false;
   }
 
@@ -49,5 +44,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/tasks/:path*"],
 };
