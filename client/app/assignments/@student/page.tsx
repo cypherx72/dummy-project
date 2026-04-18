@@ -13,9 +13,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
-
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ClipboardList,
@@ -71,7 +69,6 @@ export default function StudentAssignmentsPage() {
     fetchNotifications,
     fetchUpcomingEvents,
     fetchAlarms,
-
     fetchEnrolledCourses,
     fetchRecentEmails,
   ]);
@@ -92,78 +89,51 @@ export default function StudentAssignmentsPage() {
     (a: any) => getStatus(a) === "missed",
   ).length;
 
-  // Upcoming: pending assignments sorted by due date
-
-  // const upcoming = [...assignments]
-  //   .filter((a: any) => {
-  //     const s = getStatus(a);
-  //     return s === "pending" || s === "late";
-  //   })
-  //   .sort(
-  //     (a: any, b: any) =>
-  //       parseMs(a.dueDate).getTime() - parseMs(b.dueDate).getTime(),
-  //   )
-  //   .slice(0, 5);
-
-  // Recent grades
-
-  // const recentGrades = assignments
-  //   .filter((a: any) => getStatus(a) === "graded")
-  //   .slice(0, 3);
-
   const loading = fetchAssignmentsLoading;
 
   return (
-    <main className="space-y-6 p-6 font-sans">
+    <main className="flex flex-col gap-6 p-4 md:p-6 font-sans">
       <NavBar />
 
-      <div className="flex gap-4 w-full h-[35lvh]">
+      {/* Top Section: User Card + Stats + Calendar */}
+      <div className="flex flex-col xl:flex-row gap-4">
+        {/* Left Column: User Card + Stats */}
         <div className="flex flex-col flex-1 gap-4">
           <UserCard />
-          {/* Stats */}
-          <div className="gap-4 grid grid-cols-2 lg:grid-cols-4">
+          {/* Stats Grid */}
+          <div className="gap-3 grid grid-cols-2 lg:grid-cols-4">
             {loading ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <Card key={i}>
-                  <CardContent className="p-5">
-                    <Skeleton className="mb-2 w-24 h-3" />
-                    <Skeleton className="w-12 h-8" />
+                  <CardContent className="p-4">
+                    <Skeleton className="mb-2 w-20 h-3" />
+                    <Skeleton className="w-10 h-7" />
                   </CardContent>
                 </Card>
               ))
             ) : (
               <>
                 <StatCard
-                  icon={
-                    <Clock3 className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                  }
+                  icon={<Clock3 className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
                   label="Pending"
                   value={pending}
                   color="text-amber-600 dark:text-amber-400"
-                  onClick={() =>
-                    router.push("/assignments/@student/assignments-and-quizzes")
-                  }
+                  onClick={() => router.push("/assignments/@student/assignments-and-quizzes")}
                 />
                 <StatCard
-                  icon={
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  }
+                  icon={<CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
                   label="Submitted"
                   value={submitted}
                   color="text-blue-600 dark:text-blue-400"
                 />
                 <StatCard
-                  icon={
-                    <Star className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                  }
+                  icon={<Star className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
                   label="Graded"
                   value={graded}
                   color="text-emerald-600 dark:text-emerald-400"
                 />
                 <StatCard
-                  icon={
-                    <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                  }
+                  icon={<XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />}
                   label="Missed"
                   value={missed}
                   color="text-red-600 dark:text-red-400"
@@ -173,71 +143,72 @@ export default function StudentAssignmentsPage() {
           </div>
         </div>
 
-        <section className="flex flex-col gap-2 rounded-2xl w-[28%]">
+        {/* Right Column: Calendar */}
+        <aside className="flex flex-col gap-3 w-full xl:w-80 shrink-0">
           <WeekCalendar />
           <CalendarEvents />
-        </section>
+        </aside>
       </div>
 
-      {/* Main grid */}
-      <div className="flex flex-col gap-4">
-        {/* Upcoming assignments (2/3) */}
-        <div className="flex flex-row items-start gap-3 rounded-2xl h-[40lvh] overflow-hidden">
-          <div className="flex flex-row flex-1 gap-4 p-2 py-4 border-1 rounded-2xl">
-            <AssignmentsCard />
-          </div>
+      {/* Middle Section: Assignments + Notifications */}
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex-1 min-w-0 border rounded-2xl p-3">
+          <AssignmentsCard />
+        </div>
+        <div className="w-full lg:w-80 shrink-0">
           <NotificationsCard />
         </div>
+      </div>
 
-        {/* Right column */}
-        <div className="flex flex-row gap-4 space-y-4 w-full">
-          {/* Notifications */}
-          <div className="flex flex-1 p-4 border-1 rounded-2xl h-auto">
-            <CourseCard />
-          </div>
-          {/* Quick links */}
-          <Card className="w-[28%]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Quick Access</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 p-4 pt-0">
-              {[
-                {
-                  label: "Assignments & Quizzes",
-                  href: "/assignments/@student/assignments-and-quizzes",
-                  icon: ClipboardList,
-                },
-                {
-                  label: "Class Schedule",
-                  href: "/assignments/@student/class-schedule",
-                  icon: CalendarDays,
-                },
-                {
-                  label: "Attendance",
-                  href: "/assignments/@student/attendance",
-                  icon: CheckCircle2,
-                },
-                {
-                  label: "Progress Report",
-                  href: "/dashboard/progress-report",
-                  icon: Star,
-                },
-              ].map((item) => (
-                <button
-                  key={item.href}
-                  onClick={() => router.push(item.href)}
-                  className="flex justify-between items-center hover:bg-muted/40 px-3 py-2.5 rounded-lg w-full transition-colors"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <item.icon className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">{item.label}</span>
-                  </div>
-                  <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
-                </button>
-              ))}
-            </CardContent>
-          </Card>
+      {/* Bottom Section: Courses + Quick Links */}
+      <div className="flex flex-col lg:flex-row gap-4">
+        {/* Courses */}
+        <div className="flex-1 min-w-0 border rounded-2xl p-4">
+          <CourseCard />
         </div>
+
+        {/* Quick Links */}
+        <Card className="w-full lg:w-80 shrink-0">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Quick Access</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-1 p-4 pt-0">
+            {[
+              {
+                label: "Assignments & Quizzes",
+                href: "/assignments/@student/assignments-and-quizzes",
+                icon: ClipboardList,
+              },
+              {
+                label: "Class Schedule",
+                href: "/assignments/@student/class-schedule",
+                icon: CalendarDays,
+              },
+              {
+                label: "Attendance",
+                href: "/assignments/@student/attendance",
+                icon: CheckCircle2,
+              },
+              {
+                label: "Progress Report",
+                href: "/dashboard/progress-report",
+                icon: Star,
+              },
+            ].map((item) => (
+              <button
+                key={item.href}
+                onClick={() => router.push(item.href)}
+                className="flex justify-between items-center hover:bg-muted/50 px-3 py-2.5 rounded-lg w-full transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <item.icon className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">{item.label}</span>
+                </div>
+                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+            ))}
+          </CardContent>
+        </Card>
       </div>
     </main>
   );

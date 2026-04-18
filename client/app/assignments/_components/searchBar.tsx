@@ -47,12 +47,12 @@ export function SearchBar() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverAnchor asChild>
-        <Field orientation="horizontal" className="relative w-md">
+        <Field orientation="horizontal" className="relative w-full sm:w-80 md:w-96">
           <Input
             ref={inputRef}
             type="search"
-            className="p-5 font-sans font-medium text-lg tracking-wide"
-            placeholder="Search for assignments"
+            className="pr-10 pl-4 py-2.5 font-sans text-sm"
+            placeholder="Search assignments..."
             value={query}
             onChange={handleChange}
             onFocus={() => query.trim() && setOpen(true)}
@@ -60,13 +60,13 @@ export function SearchBar() {
           {query ? (
             <button
               onClick={handleClear}
-              className="right-5 z-10 absolute text-zinc-400 hover:text-zinc-200"
+              className="right-3 z-10 absolute text-muted-foreground hover:text-foreground transition-colors"
               type="button"
             >
-              <X className="size-5" />
+              <X className="w-4 h-4" />
             </button>
           ) : (
-            <Search className="right-5 z-10 absolute size-5 text-zinc-400 pointer-events-none" />
+            <Search className="right-3 z-10 absolute w-4 h-4 text-muted-foreground pointer-events-none" />
           )}
         </Field>
       </PopoverAnchor>

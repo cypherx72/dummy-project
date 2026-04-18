@@ -19,59 +19,20 @@ import {
   ClipboardList,
   BookOpen,
   Bell,
-  Clock3,
   Plus,
   CheckCircle2,
-  Star,
   AlertTriangle,
-  XCircle,
-  TrendingUp,
-  Users,
   CalendarDays,
   ArrowRight,
 } from "lucide-react";
 import { format, isPast, isToday, formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
-
-type AssignmentStatus = "pending" | "submitted" | "graded" | "late" | "missed";
+import NavBar from "../_components/navBar";
 
 function parseMs(raw: string): Date {
   const n = Number(raw);
   return isNaN(n) ? new Date(raw) : new Date(n);
 }
-
-const STATUS_CFG: Record<
-  AssignmentStatus,
-  { label: string; icon: React.ReactNode; badge: string }
-> = {
-  pending: {
-    label: "Pending",
-    icon: <Clock3 className="w-3 h-3" />,
-    badge: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
-  },
-  submitted: {
-    label: "Submitted",
-    icon: <CheckCircle2 className="w-3 h-3" />,
-    badge: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
-  },
-  graded: {
-    label: "Graded",
-    icon: <Star className="w-3 h-3" />,
-    badge:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400",
-  },
-  late: {
-    label: "Late",
-    icon: <AlertTriangle className="w-3 h-3" />,
-    badge:
-      "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400",
-  },
-  missed: {
-    label: "Missed",
-    icon: <XCircle className="w-3 h-3" />,
-    badge: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400",
-  },
-};
 
 export default function TeacherAssignmentsPage() {
   const router = useRouter();
@@ -118,18 +79,18 @@ export default function TeacherAssignmentsPage() {
     color: string;
   }) => (
     <Card className="relative overflow-hidden">
-      <CardContent className="p-5">
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="text-muted-foreground text-xs uppercase tracking-wide">
+      <CardContent className="p-4 md:p-5">
+        <div className="flex justify-between items-start gap-3">
+          <div className="min-w-0">
+            <p className="text-muted-foreground text-xs uppercase tracking-wide truncate">
               {label}
             </p>
-            <p className={cn("mt-1 font-bold text-3xl", color)}>{value}</p>
+            <p className={cn("mt-1 font-bold text-2xl md:text-3xl", color)}>{value}</p>
             {sub && (
               <p className="mt-0.5 text-muted-foreground text-xs">{sub}</p>
             )}
           </div>
-          <div className={cn("p-2.5 rounded-xl", color.replace("text-", "bg-").replace("-600", "-100").replace("-400", "-950/30"))}>
+          <div className={cn("p-2 md:p-2.5 rounded-xl shrink-0", color.replace("text-", "bg-").replace("-600", "-100").replace("-400", "-950/30"))}>
             {icon}
           </div>
         </div>
@@ -138,15 +99,17 @@ export default function TeacherAssignmentsPage() {
   );
 
   return (
-    <main className="space-y-6 p-6 font-sans">
+    <main className="flex flex-col gap-6 p-4 md:p-6 font-sans">
       {/* Header */}
+      <NavBar />
+
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="font-bold text-2xl tracking-tight">
+          <h1 className="font-bold text-xl md:text-2xl tracking-tight text-balance">
             {dashboardLoading ? (
               <Skeleton className="w-48 h-7" />
             ) : (
-              <>Welcome back, {user?.name?.split(" ")[0] ?? "Teacher"} 👋</>
+              <>Welcome back, {user?.name?.split(" ")[0] ?? "Teacher"}</>
             )}
           </h1>
           <p className="mt-0.5 text-muted-foreground text-sm">
@@ -163,41 +126,41 @@ export default function TeacherAssignmentsPage() {
       </div>
 
       {/* Stats row */}
-      <div className="gap-4 grid grid-cols-2 lg:grid-cols-4">
+      <div className="gap-3 md:gap-4 grid grid-cols-2 lg:grid-cols-4">
         {dashboardLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}>
-              <CardContent className="p-5">
-                <Skeleton className="mb-2 w-24 h-3" />
-                <Skeleton className="w-12 h-8" />
+              <CardContent className="p-4">
+                <Skeleton className="mb-2 w-20 h-3" />
+                <Skeleton className="w-10 h-7" />
               </CardContent>
             </Card>
           ))
         ) : (
           <>
             <StatCard
-              icon={<ClipboardList className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
+              icon={<ClipboardList className="w-4 h-4 md:w-5 md:h-5 text-blue-600 dark:text-blue-400" />}
               label="Total Assignments"
               value={totalAssignments}
               sub="All posted"
               color="text-blue-600 dark:text-blue-400"
             />
             <StatCard
-              icon={<BookOpen className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
+              icon={<BookOpen className="w-4 h-4 md:w-5 md:h-5 text-emerald-600 dark:text-emerald-400" />}
               label="Active Courses"
               value={activeCourses}
               sub="Enrolled classes"
               color="text-emerald-600 dark:text-emerald-400"
             />
             <StatCard
-              icon={<CalendarDays className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
+              icon={<CalendarDays className="w-4 h-4 md:w-5 md:h-5 text-amber-600 dark:text-amber-400" />}
               label="Due Today"
               value={dueToday}
               sub="Assignments"
               color="text-amber-600 dark:text-amber-400"
             />
             <StatCard
-              icon={<AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />}
+              icon={<AlertTriangle className="w-4 h-4 md:w-5 md:h-5 text-red-600 dark:text-red-400" />}
               label="Overdue"
               value={overdue}
               sub="Need attention"
@@ -208,9 +171,9 @@ export default function TeacherAssignmentsPage() {
       </div>
 
       {/* Main grid */}
-      <div className="gap-6 grid grid-cols-1 lg:grid-cols-3">
-        {/* Assignments list (2/3 width) */}
-        <div className="space-y-4 lg:col-span-2">
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Assignments list */}
+        <div className="flex flex-col flex-1 gap-4 min-w-0">
           <Card>
             <CardHeader className="pb-3">
               <div className="flex justify-between items-center">
@@ -336,8 +299,8 @@ export default function TeacherAssignmentsPage() {
           </Card>
         </div>
 
-        {/* Right column (1/3) */}
-        <div className="space-y-4">
+        {/* Right column */}
+        <aside className="flex flex-col gap-4 w-full lg:w-80 shrink-0">
           {/* Today's tasks */}
           <Card>
             <CardHeader className="pb-3">
@@ -477,7 +440,7 @@ export default function TeacherAssignmentsPage() {
               )}
             </CardContent>
           </Card>
-        </div>
+        </aside>
       </div>
     </main>
   );

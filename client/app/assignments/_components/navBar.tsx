@@ -1,9 +1,6 @@
 "use client";
 
-import { Mail } from "lucide-react";
-import { Bell } from "lucide-react";
-import { Sparkles } from "lucide-react";
-
+import { Mail, Bell, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "./searchBar";
 import { Badge } from "@/components/ui/badge";
@@ -12,61 +9,64 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function NavBar() {
   return (
-    <section className="flex flex-row justify-between items-center">
+    <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
       <SearchBar />
-      <Boo />
-    </section>
+      <NavActions />
+    </header>
   );
 }
 
-function Boo() {
+function NavActions() {
   const { user } = useSession();
 
-  const firstName = user?.name.split(" ")[0] as string;
-  const secondName = user?.name.split(" ")[1] as string;
+  const firstName = user?.name?.split(" ")[0] ?? "";
+  const secondName = user?.name?.split(" ")[1] ?? "";
+  const initials = `${firstName[0] ?? ""}${secondName[0] ?? ""}`;
 
-  const initials = firstName[0] + secondName[0];
   return (
-    <div className="flex flex-row justify-end items-center space-x-4 w-full">
+    <div className="flex flex-row items-center gap-2 sm:gap-3">
+      {/* AI Assistant Button */}
       <Button
         variant="secondary"
-        className="relative bg-gradient-to-br from-indigo-500/20 via-purple-500/10 to-cyan-500/20 shadow-lg backdrop-blur-md p-3 border border-white/10 overflow-hidden"
+        size="sm"
+        className="relative bg-muted/50 hover:bg-muted border border-border/50 gap-2"
       >
-        <span className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-cyan-500/10 pointer-events-none" />
-        <span className="flex items-center gap-2">
-          <Sparkles className="text-indigo-400" />
-          <p className="font-normal text-sm">CampusPilot AI</p>
-        </span>
+        <Sparkles className="w-4 h-4 text-blue-500" />
+        <span className="hidden sm:inline text-sm">CampusPilot AI</span>
       </Button>
 
       {/* Mail */}
-      <Button className="relative" variant="secondary" size="icon-lg">
-        <Mail className="size-6" />
-        <Badge className="top-0.5 right-0.5 z-10 absolute bg-green-400 p-1.5 rounded-full size-3 font-semibold">
+      <Button variant="secondary" size="icon" className="relative">
+        <Mail className="w-5 h-5" />
+        <Badge className="top-0 right-0 absolute flex items-center justify-center bg-emerald-500 text-white text-[10px] w-4 h-4 p-0 rounded-full">
           2
         </Badge>
       </Button>
 
-      <Button variant="secondary" size="icon-lg" className="relative p-0">
-        <Bell className="size-6" />
-        <Badge className="top-0.5 right-1 z-10 absolute bg-green-400 p-1.5 rounded-full size-3 font-semibold">
+      {/* Notifications */}
+      <Button variant="secondary" size="icon" className="relative">
+        <Bell className="w-5 h-5" />
+        <Badge className="top-0 right-0 absolute flex items-center justify-center bg-emerald-500 text-white text-[10px] w-4 h-4 p-0 rounded-full">
           2
         </Badge>
       </Button>
 
-      <div className="flex flex-row items-center space-x-1">
-        <Avatar className="size-10">
-          <AvatarImage src={user?.image} />
-          <AvatarFallback className="font-semibold text-sm">
+      {/* User Profile */}
+      <div className="flex items-center gap-2 ml-1">
+        <Avatar className="w-9 h-9">
+          <AvatarImage src={user?.image} alt={user?.name ?? "User"} />
+          <AvatarFallback className="font-medium text-sm bg-muted">
             {initials}
           </AvatarFallback>
         </Avatar>
-        <span className="flex flex-col text-xs tracking-wide">
-          <p className="font-semibold text-zinc-300 text-nowrap">
+        <div className="hidden md:flex flex-col">
+          <span className="font-medium text-sm text-foreground leading-tight truncate max-w-32">
             {user?.name}
-          </p>
-          <p className="font-semibold text-zinc-500">{user?.role}</p>
-        </span>
+          </span>
+          <span className="text-xs text-muted-foreground capitalize">
+            {user?.role}
+          </span>
+        </div>
       </div>
     </div>
   );
