@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAssignmentUI } from "@/context/tasks/task-context";
 import AssignmentsCard from "@/app/dashboard/assignments/assignment-card";
@@ -30,6 +30,7 @@ import { isPast, isToday } from "date-fns";
 import UserCard from "../_components/userCard";
 import NavBar from "../_components/navBar";
 import NotificationsCard from "@/app/dashboard/assignments/notifications-card";
+import { Button } from "@/components/ui/button";
 
 type AssignmentStatus = "pending" | "submitted" | "graded" | "late" | "missed";
 
@@ -47,6 +48,7 @@ function getStatus(a: any): AssignmentStatus {
 
 export default function StudentAssignmentsPage() {
   const router = useRouter();
+  const [assignments, setAssignments] = useState([]);
 
   const {
     fetchAssignments,
@@ -76,7 +78,12 @@ export default function StudentAssignmentsPage() {
     fetchRecentEmails,
   ]);
 
-  const assignments = fetchAssignmentsData.GetAssignments.assignments;
+  useEffect(() => {
+    if (fetchAssignmentsData?.GetAssignments) {
+      const assignments = fetchAssignmentsData.GetAssignments.assignments;
+      setAssignments(assignments);
+    }
+  }, [fetchAssignmentsData]);
 
   const pending = assignments.filter((a: any) => {
     const s = getStatus(a);
@@ -118,10 +125,10 @@ export default function StudentAssignmentsPage() {
       <NavBar />
 
       <div className="flex gap-4 w-full h-[35lvh]">
-        <div className="flex flex-col flex-1 gap-4">
+        <div className="flex flex-col flex-1 gap-4 h-full">
           <UserCard />
           {/* Stats */}
-          <div className="gap-4 grid grid-cols-2 lg:grid-cols-4">
+          <div className="gap-4 grid grid-cols-2 lg:grid-cols-4 h-full">
             {loading ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <Card key={i}>
@@ -173,71 +180,66 @@ export default function StudentAssignmentsPage() {
           </div>
         </div>
 
-        <section className="flex flex-col gap-2 rounded-2xl w-[28%]">
+        <section className="flex flex-col gap-2 p-2 border-1 rounded-2xl w-[28%]">
           <WeekCalendar />
           <CalendarEvents />
         </section>
       </div>
 
-      {/* Main grid */}
-      <div className="flex flex-col gap-4">
-        {/* Upcoming assignments (2/3) */}
-        <div className="flex flex-row items-start gap-3 rounded-2xl h-[40lvh] overflow-hidden">
-          <div className="flex flex-row flex-1 gap-4 p-2 py-4 border-1 rounded-2xl">
-            <AssignmentsCard />
-          </div>
-          <NotificationsCard />
-        </div>
+      <div className="flex flex-row items-start gap-4 rounded-2xl h-[45lvh] overflow-hidden">
+        <AssignmentsCard />
+        <NotificationsCard />
+      </div>
 
-        {/* Right column */}
-        <div className="flex flex-row gap-4 space-y-4 w-full">
-          {/* Notifications */}
-          <div className="flex flex-1 p-4 border-1 rounded-2xl h-auto">
-            <CourseCard />
-          </div>
-          {/* Quick links */}
-          <Card className="w-[28%]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Quick Access</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 p-4 pt-0">
-              {[
-                {
-                  label: "Assignments & Quizzes",
-                  href: "/assignments/@student/assignments-and-quizzes",
-                  icon: ClipboardList,
-                },
-                {
-                  label: "Class Schedule",
-                  href: "/assignments/@student/class-schedule",
-                  icon: CalendarDays,
-                },
-                {
-                  label: "Attendance",
-                  href: "/assignments/@student/attendance",
-                  icon: CheckCircle2,
-                },
-                {
-                  label: "Progress Report",
-                  href: "/dashboard/progress-report",
-                  icon: Star,
-                },
-              ].map((item) => (
-                <button
-                  key={item.href}
-                  onClick={() => router.push(item.href)}
-                  className="flex justify-between items-center hover:bg-muted/40 px-3 py-2.5 rounded-lg w-full transition-colors"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <item.icon className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">{item.label}</span>
-                  </div>
-                  <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
-                </button>
-              ))}
-            </CardContent>
-          </Card>
+      {/* Right column */}
+      <div className="flex flex-row gap-4 space-y-4 w-full h-[45lvh] overflow-hidden">
+        {/* Notifications */}
+        <div className="flex flex-1 p-4 border-1 rounded-2xl h-full overflow-hidden">
+          <CourseCard />
         </div>
+        {/* Quick links */}
+        <Card className="w-[28%] h-full">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Quick Access</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 p-4 pt-0">
+            {[
+              {
+                label: "Assignments & Quizzes",
+                href: "/assignments/@student/assignments-and-quizzes",
+                icon: ClipboardList,
+              },
+              {
+                label: "Class Schedule",
+                href: "/assignments/@student/class-schedule",
+                icon: CalendarDays,
+              },
+              {
+                label: "Attendance",
+                href: "/assignments/@student/attendance",
+                icon: CheckCircle2,
+              },
+              {
+                label: "Progress Report",
+                href: "/dashboard/progress-report",
+                icon: Star,
+              },
+            ].map((item) => (
+              <Button
+                variant="secondary"
+                key={item.href}
+                onClick={() => router.push(item.href)}
+                className="flex justify-between items-center hover:bg-muted/40 px-3 py-3 rounded-lg w-full transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <item.icon className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">{item.label}</span>
+                </div>
+                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
+              </Button>
+            ))}
+          </CardContent>
+        </Card>
       </div>
     </main>
   );

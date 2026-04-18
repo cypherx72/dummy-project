@@ -29,7 +29,10 @@ function AssignmentProgress({ value = 78 }: { value?: number }) {
     <Field className="gap-0.5 w-full max-w-sm">
       <FieldLabel htmlFor="progress-upload">
         <span className="font-light">Syllabus progress</span>
-        <span className="ml-auto transition-colors duration-500" style={{ color }}>
+        <span
+          className="ml-auto transition-colors duration-500"
+          style={{ color }}
+        >
           {value}%
         </span>
       </FieldLabel>
@@ -45,7 +48,7 @@ function AssignmentProgress({ value = 78 }: { value?: number }) {
 
 function CourseCardItem({ course }: { course: any }) {
   return (
-    <div className="relative border-0 rounded-2xl w-full h-[35vh]">
+    <div className="relative border-0 rounded-2xl w-full h-full">
       <div className="z-0 absolute inset-0 rounded-2xl dark-horizon-glow" />
       <Card className="justify-start p-0 font-sans">
         <div className="z-20 relative flex flex-col justify-evenly space-y-5 bg-black/10 backdrop-blur-sm px-3 py-4 rounded-2xl w-full h-full">
@@ -81,7 +84,7 @@ function CourseCardSkeleton() {
     <div className="gap-4 grid grid-flow-col auto-cols-[16rem] w-full overflow-x-auto no-scrollbar">
       {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} className="relative border-0 rounded-2xl w-full h-[35vh]">
-          <Skeleton className="w-full h-full rounded-2xl" />
+          <Skeleton className="rounded-2xl w-full h-full" />
         </div>
       ))}
     </div>
@@ -89,15 +92,18 @@ function CourseCardSkeleton() {
 }
 
 export default function CoursesSection() {
-  const { enrolledCoursesData, enrolledCoursesLoading, enrolledCoursesError, fetchEnrolledCourses } =
-    useAssignmentUI();
+  const {
+    enrolledCoursesData,
+    enrolledCoursesLoading,
+    enrolledCoursesError,
+    fetchEnrolledCourses,
+  } = useAssignmentUI();
 
   const courses: any[] = enrolledCoursesData?.GetEnrolledCourses?.courses ?? [];
 
   return (
-    <section className="space-y-3 w-full">
-      <h3 className="flex flex-row items-center gap-1 font-medium text-zinc-500 tracking-wide">
-        <MdOutlineSubject className="size-5" />
+    <section className="space-y-3 px-6 w-full">
+      <h3 className="flex flex-row items-center gap-1 font-medium text-zinc-300 tracking-wide">
         Enrolled Courses
       </h3>
 
@@ -106,9 +112,15 @@ export default function CoursesSection() {
       {!enrolledCoursesLoading && enrolledCoursesError && (
         <div className="flex flex-col items-center gap-2 py-8 text-center">
           <AlertCircle className="w-7 h-7 text-destructive" />
-          <p className="text-muted-foreground text-sm">Failed to load courses.</p>
+          <p className="text-muted-foreground text-sm">
+            Failed to load courses.
+          </p>
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => (fetchEnrolledCourses as () => void)()}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => (fetchEnrolledCourses as () => void)()}
+            >
               <RefreshCw className="mr-1.5 w-3.5 h-3.5" />
               Refetch
             </Button>
@@ -119,17 +131,21 @@ export default function CoursesSection() {
         </div>
       )}
 
-      {!enrolledCoursesLoading && !enrolledCoursesError && courses.length === 0 && (
-        <p className="text-muted-foreground text-xs">No enrolled courses.</p>
-      )}
+      {!enrolledCoursesLoading &&
+        !enrolledCoursesError &&
+        courses.length === 0 && (
+          <p className="text-muted-foreground text-xs">No enrolled courses.</p>
+        )}
 
-      {!enrolledCoursesLoading && !enrolledCoursesError && courses.length > 0 && (
-        <div className="gap-4 grid grid-flow-col auto-cols-[16rem] w-full overflow-x-auto no-scrollbar">
-          {courses.map((course) => (
-            <CourseCardItem key={course.id} course={course} />
-          ))}
-        </div>
-      )}
+      {!enrolledCoursesLoading &&
+        !enrolledCoursesError &&
+        courses.length > 0 && (
+          <div className="gap-4 grid grid-flow-col auto-cols-[16rem] py-2 w-full overflow-y-auto">
+            {courses.map((course) => (
+              <CourseCardItem key={course.id} course={course} />
+            ))}
+          </div>
+        )}
     </section>
   );
 }

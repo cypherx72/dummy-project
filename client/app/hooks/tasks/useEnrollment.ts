@@ -1,4 +1,4 @@
-import { useLazyQuery, useMutation } from "@apollo/client";
+import { useLazyQuery, useMutation } from "@apollo/client/react";
 import {
   GET_DEPARTMENTS,
   GET_COURSE_BY_ID,
@@ -50,11 +50,7 @@ export const useEnrollment = () => {
     ENROLL_STUDENT,
     {
       onCompleted: (data) => {
-        showToast(
-          "Student enrolled",
-          data.EnrollStudent.message,
-          "success",
-        );
+        showToast("Student enrolled", data.EnrollStudent.message, "success");
       },
       onError: (err) => {
         errorToast(err.message ?? "Enrollment failed. Please try again.");
@@ -67,11 +63,7 @@ export const useEnrollment = () => {
     UNENROLL_STUDENT,
     {
       onCompleted: (data) => {
-        showToast(
-          "Student unenrolled",
-          data.UnenrollStudent.message,
-          "info",
-        );
+        showToast("Student unenrolled", data.UnenrollStudent.message, "info");
       },
       onError: (err) => {
         errorToast(err.message ?? "Unenrollment failed. Please try again.");

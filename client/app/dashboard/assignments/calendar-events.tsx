@@ -57,7 +57,7 @@ export default function CalendarEvents() {
   }, {});
 
   return (
-    <div className="flex flex-col gap-4 w-full h-full overflow-hidden overflow-y-auto no-scrollbar">
+    <div className="flex flex-col gap-4 w-full h-full overflow-hidden overflow-y-auto">
       {upcomingEventsLoading && <EventSkeleton />}
 
       {!upcomingEventsLoading && upcomingEventsError && (
@@ -93,7 +93,7 @@ export default function CalendarEvents() {
         )}
 
       {!upcomingEventsLoading && !upcomingEventsError && events.length > 0 && (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 p-2 w-full">
           {groupOrder.map((group) => {
             const items = grouped[group];
             if (!items || items.length === 0) return null;
