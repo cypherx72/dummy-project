@@ -1,0 +1,63 @@
+"use client";
+
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item";
+import { Button } from "@/components/ui/button";
+import { BsThreeDotsVertical } from "react-icons/bs";
+import { GoCommentDiscussion } from "react-icons/go";
+import { useAssignmentUI } from "@/context/tasks/task-context";
+import { format } from "date-fns";
+
+export default function CalendarEvents() {
+  const { dashboardData, dashboardLoading } = useAssignmentUI();
+  const events: any[] = dashboardData?.GetDashboardData?.events ?? [];
+
+  return (
+    <div className="flex items-center border-zinc-800 rounded-md divide-y divide-zinc-800 w-full h-full overflow-hidden overflow-y-auto scrollbar">
+      {dashboardLoading && (
+        <p className="px-2 py-1 text-muted-foreground text-xs">Loading…</p>
+      )}
+      {!dashboardLoading && events.length === 0 && (
+        <p className="flex justify-center px-2 py-1 w-full h-full text-muted-foreground text-lg tracking-wide">
+          No upcoming events.
+        </p>
+      )}
+      {events.map((event) => (
+        <Item
+          key={event.id}
+          className="hover:bg-zinc-800/50 px-1 py-2 transition-colors"
+        >
+          <ItemMedia
+            className="flex flex-col justify-center items-center text-zinc-400"
+            variant="icon"
+          >
+            <GoCommentDiscussion className="text-lg" />
+          </ItemMedia>
+
+          <ItemContent className="truncate">
+            <ItemTitle className="font-medium text-sm">{event.title}</ItemTitle>
+
+            <ItemDescription className="text-zinc-400 text-xs">
+              {event.startDate
+                ? format(new Date(event.startDate), "h:mm a")
+                : "TBD"}
+              {event.location ? ` · ${event.location}` : ""}
+            </ItemDescription>
+          </ItemContent>
+
+          <ItemActions>
+            <Button variant="ghost" size="icon">
+              <BsThreeDotsVertical className="text-zinc-400" />
+            </Button>
+          </ItemActions>
+        </Item>
+      ))}
+    </div>
+  );
+}

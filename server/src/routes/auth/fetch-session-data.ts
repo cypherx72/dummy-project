@@ -1,13 +1,13 @@
 import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { prisma } from "../../lib/prisma.js";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
 export const fetchSession = async (req: Request, res: Response) => {
   const GENERIC_UNAUTH = () =>
     res.status(401).json({
-      authenticated: false,
+      message: "Your session has expired. Please sign-in in again to continue.",
+      code: "AUTHENTICATION_FAILED",
     });
 
   try {
@@ -26,28 +26,14 @@ export const fetchSession = async (req: Request, res: Response) => {
       return GENERIC_UNAUTH();
     }
 
-    // Fetch user
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        image: true,
-        role: true,
-        createdAt: true,
-      },
-    });
+    console.log(decoded);
 
-    // Mask ALL failures
-    if (!user) {
+    if (!decoded) {
       return GENERIC_UNAUTH();
     }
 
-    // SUCCESS
     return res.json({
-      authenticated: true,
-      user,
+      user: decoded,
     });
   } catch (error) {
     console.error("Session fetch error:", error);

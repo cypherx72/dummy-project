@@ -1,5 +1,12 @@
-import { redirect } from "next/navigation";
+"use client";
 
-export default function DashboardTasksLayoutRedirect() {
-  redirect("/tasks");
+import React from "react";
+import { TaskUIProvider } from "@/context/tasks/provider";
+
+export default function ChatLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <TaskUIProvider>{children}</TaskUIProvider>;
 }

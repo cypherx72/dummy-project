@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AssignmentUIContext } from "./task-context";
 import { useTaskQueries } from "@/app/hooks/tasks/useTaskQueries";
 import { useTaskMutations } from "@/app/hooks/tasks/useTaskMutations";
-import { UploadUrlConfigType } from "@/app/tasks/_utils/taskTypes";
+import { UploadUrlConfigType } from "@/app/assignments/_utils/taskTypes";
 
 export const AssignmentProvider = ({ children }: { children: React.ReactNode }) => {
   const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>(

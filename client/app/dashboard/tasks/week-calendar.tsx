@@ -54,16 +54,16 @@ export function WeekCalendar() {
         months: "flex flex-row items-start justify-center",
         month: "space-y-2",
         week: "flex w-full mt-2 [&:not(:has(button:not(.hidden)))]:hidden",
-        month_caption: "flex justify-center font-sans",
+        month_caption: "flex justify-center",
         nav: "flex items-center text-white gap-32 top-1 absolute",
         // month_grid: "w-full relative border-collapse",
         weekday:
-          "text-muted-foreground font-sans rounded-md font-semibold w-9 font-medium text-xs",
+          "text-muted-foreground font-sans rounded-md font-semibold w-9 font-medium text-sm",
         // row: "flex w-ful l mt-1",
         // cell: "h-10 w-10 text-center text-sm p-0 relative",
 
         day: cn(
-          "flex justify-center items-center rounded-md w-9 h-9 font-normal transition-all duration-200",
+          "flex justify-center items-center rounded-md w-9 h-9 font-normal text-[12px] transition-all duration-200",
           "hover:bg-accent hover:text-accent-foreground",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         ),

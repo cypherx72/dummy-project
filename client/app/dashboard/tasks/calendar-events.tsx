@@ -19,12 +19,12 @@ export default function CalendarEvents() {
   const events: any[] = dashboardData?.GetDashboardData?.events ?? [];
 
   return (
-    <div className="border-zinc-800 rounded-md divide-y divide-zinc-800 w-full h-1/2 overflow-hidden overflow-y-auto scrollbar">
+    <div className="flex justify-center border-zinc-800 rounded-md divide-y divide-zinc-800 w-full h-full overflow-hidden overflow-y-auto scrollbar">
       {dashboardLoading && (
-        <p className="text-muted-foreground text-xs px-2 py-1">Loading…</p>
+        <p className="px-2 py-1 text-muted-foreground text-xs">Loading…</p>
       )}
       {!dashboardLoading && events.length === 0 && (
-        <p className="text-muted-foreground text-xs px-2 py-1">
+        <p className="px-2 py-1 font-medium text-muted-foreground text-sm tracking-wide">
           No upcoming events.
         </p>
       )}

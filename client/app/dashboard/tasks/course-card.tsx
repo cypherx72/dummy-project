@@ -2,6 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { MdOutlineSubject } from "react-icons/md";
+import { Progress } from "@/components/ui/progress";
+import { BookText } from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -10,56 +12,84 @@ import {
   CardDescription,
   CardAction,
 } from "@/components/ui/card";
+import { useEffect, useState } from "react";
 import { useAssignmentUI } from "@/context/tasks/task-context";
 
-// Fallback placeholder images cycled by index
-const PLACEHOLDER_IMAGES = [
-  "https://images.unsplash.com/photo-1628595351029-c2bf17511435?q=80&w=1032&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1515879218367-8466d910aaa4",
-  "https://images.unsplash.com/photo-1550751827-4bd374c3f58b",
-  "https://images.unsplash.com/photo-1526378722484-bd91ca387e72",
-];
+import { Field, FieldLabel } from "@/components/ui/field";
 
-function CourseCard({ course, index }: { course: any; index: number }) {
-  const img = PLACEHOLDER_IMAGES[index % PLACEHOLDER_IMAGES.length];
+function getProgressColor(value: number): string {
+  const red = value < 50 ? 220 : Math.round(220 - (value - 50) * 4.4);
+  const green =
+    value < 50 ? Math.round(value * 3.1) : 155 + Math.round((value - 50) * 2);
+  return `rgb(${red}, ${green}, 60)`;
+}
+
+export function AssignmentProgress({ value = 78 }: { value?: number }) {
+  const color = getProgressColor(value);
 
   return (
-    <Card
-      className="relative justify-end p-0 border-0 rounded-2xl w-64 h-[22rem] overflow-hidden font-sans"
-      style={{
-        backgroundImage: `url(${img})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      {/* Gradient */}
-      <div className="bottom-0 left-0 z-10 absolute bg-gradient-to-t from-black via-black/50 to-transparent w-full h-32 pointer-events-none" />
+    <Field className="gap-0.5 w-full max-w-sm">
+      <FieldLabel htmlFor="progress-upload">
+        <span className="font-light">Syllabus progress</span>
+        <span
+          className="ml-auto transition-colors duration-500"
+          style={{ color }}
+        >
+          {value}%
+        </span>
+      </FieldLabel>
+      <Progress
+        value={value}
+        id="progress-upload"
+        className="[&>[data-slot='progress-indicator']]:transition-[background-color,width] [&>[data-slot='progress-indicator']]:duration-500"
+        style={
+          {
+            "--progress-indicator-color": color,
+          } as React.CSSProperties
+        }
+      />
+    </Field>
+  );
+}
+
+function CourseCard({ course }: { course: any }) {
+  return (
+    <div className="relative border-0 rounded-2xl w-full h-[35vh]">
+      {/* Dark Horizon Glow */}
+      <div className="z-0 absolute inset-0 rounded-2xl dark-horizon-glow" />
 
       {/* Content */}
-      <div className="z-20 relative flex flex-col justify-evenly bg-black/10 backdrop-blur-sm px-3 py-0 rounded-b-2xl w-full h-3/5">
-        <CardHeader className="space-y-1 p-0">
-          <CardTitle className="text-white text-lg truncate">
-            {course.title ?? course.name}
-          </CardTitle>
+      <Card className="justify-start p-0 font-sans">
+        <div className="z-20 relative flex flex-col justify-evenly space-y-5 bg-black/10 backdrop-blur-sm px-3 py-4 rounded-2xl w-full h-full">
+          <CardHeader className="space-y-2 p-0">
+            <CardTitle className="font-medium text-white text-lg truncate capitalize">
+              {course.name}
+            </CardTitle>
 
-          <CardDescription className="text-zinc-200 text-xs line-clamp-2">
-            {course.description ?? course.code}
-          </CardDescription>
-        </CardHeader>
+            <CardDescription className="space-y-2 font-light text-zinc-200 text-sm tracking-wide">
+              {/* {course.description} */}
+              <p className="text-zinc-300 line-clamp-2">
+                Lorem ipsum dolor sit amet consectetur adipisicing elit. Odio
+                magni ipsa dolor, nisi quasi deleniti, reprehenderit mollitia
+                non illo accusamus adipisci earum maiores consectetur. Earum
+                ipsam adipisci est numquam quia.
+              </p>
+              <span className="flex flex-row items-center space-x-1 p-0 text-zinc-500">
+                <BookText className="size-6" />
+                <p className="text-xs uppercase">{course.code}</p>
+              </span>
+              <AssignmentProgress />
+            </CardDescription>
+          </CardHeader>
 
-        <CardAction>
-          <Button size="sm" variant="default">
-            View Course
-          </Button>
-        </CardAction>
-
-        <CardFooter className="flex flex-col gap-1 p-0 pt-1">
-          <div className="w-full">
-            <p className="text-zinc-300 text-xs">{course.code}</p>
-          </div>
-        </CardFooter>
-      </div>
-    </Card>
+          <CardAction className="ml-auto">
+            <Button size="sm" className="font-semibold" variant="default">
+              View Course
+            </Button>
+          </CardAction>
+        </div>
+      </Card>
+    </div>
   );
 }
 
@@ -69,9 +99,9 @@ export default function CoursesSection() {
 
   return (
     <section className="space-y-3 w-full">
-      <h3 className="flex flex-row items-center gap-1 font-semibold text-zinc-500 tracking-wide">
+      <h3 className="flex flex-row items-center gap-1 font-medium text-zinc-500 tracking-wide">
         <MdOutlineSubject className="size-5" />
-        Course Tab
+        Enrolled Courses
       </h3>
 
       {dashboardLoading && (

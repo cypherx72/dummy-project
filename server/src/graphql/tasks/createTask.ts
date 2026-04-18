@@ -45,7 +45,7 @@ export async function CreateAssignment(
       await prisma.media.createMany({
         data: data.attachments.map((file) => ({
           cloudinary_url: file.cloudinaryUrl,
-          size: file.bytes.toString(),
+          size: file.bytes,
           name: file.name,
           file_extension: file.fileExtension,
           resource_type: file.resourceType,

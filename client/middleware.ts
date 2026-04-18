@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PROTECTED_PREFIXES = ["/dashboard", "/tasks"];
+const PROTECTED_PREFIXES = ["/dashboard", "/assignments"];
 const SERVER_SESSION_URL =
   process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:4000";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  const GENERIC_ERR = () => {
+    const signInUrl = request.nextUrl.clone();
+    signInUrl.pathname = "/auth/signin";
+    signInUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(signInUrl);
+  };
 
   const isProtected = PROTECTED_PREFIXES.some((prefix) =>
     pathname.startsWith(prefix),
@@ -18,31 +25,22 @@ export async function middleware(request: NextRequest) {
 
   const cookieHeader = request.headers.get("cookie") ?? "";
 
-  let isAuthenticated = false;
   try {
     const res = await fetch(`${SERVER_SESSION_URL}/auth/session`, {
       headers: { cookie: cookieHeader },
-      signal: AbortSignal.timeout(3000),
+      signal: AbortSignal.timeout(10000),
     });
 
-    if (res.ok) {
-      const data = await res.json();
-      isAuthenticated = data?.authenticated === true;
+    if (!res.ok) {
+      GENERIC_ERR();
     }
   } catch {
-    isAuthenticated = false;
-  }
-
-  if (!isAuthenticated) {
-    const signInUrl = request.nextUrl.clone();
-    signInUrl.pathname = "/auth/signin";
-    signInUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(signInUrl);
+    GENERIC_ERR();
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/tasks/:path*"],
+  matcher: ["/dashboard/:path*", "/assignments/:path*"],
 };

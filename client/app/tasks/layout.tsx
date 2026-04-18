@@ -29,11 +29,13 @@ export default function TasksLayout({
 }) {
   const { user, loading } = useSession();
 
+  console.log("User session: ", user);
+
   return (
     <TaskUIProvider>
       <TasksShell>
         {loading ? (
-          <div className="animate-pulse border rounded-md h-[50vh]" />
+          <div className="border rounded-md h-[50vh] animate-pulse" />
         ) : user?.role === "teacher" || user?.role === "admin" ? (
           teacher
         ) : user?.role === "student" ? (

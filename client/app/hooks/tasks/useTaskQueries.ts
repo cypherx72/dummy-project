@@ -2,7 +2,7 @@ import { useLazyQuery } from "@apollo/client/react";
 import {
   FETCH_DASHBOARD_DATA,
   FETCH_ASSIGNMENTS_DATA,
-} from "@/app/tasks/_queries/taskQueries";
+} from "@/app/assignments/_queries/taskQueries";
 import { useEffect } from "react";
 import { errorToast } from "@/components/ui/toast";
 

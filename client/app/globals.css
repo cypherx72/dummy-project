@@ -175,3 +175,20 @@
   scrollbar-width: thin;
   scrollbar-color: #475569 transparent;
 }
+
+.user-card {
+  background-color: #254336;
+  background-image:
+    radial-gradient(at 54% 36%, #254336 0%, transparent 60%),
+    radial-gradient(at 63% 86%, #6b8a7a 0%, transparent 50%),
+    radial-gradient(at 52% 77%, #b7b597 0%, transparent 40%),
+    radial-gradient(at 97% 43%, #dad3be 0%, transparent 30%);
+}
+
+.dark-horizon-glow {
+  background: radial-gradient(125% 125% at 50% 10%, #000000 40%, #072607 100%);
+}
+
+[data-slot="progress-indicator"] {
+  background-color: var(--progress-indicator-color) !important;
+}

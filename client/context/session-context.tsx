@@ -7,7 +7,7 @@ type Session = {
   email: string;
   image?: string;
   role: string;
-  name: string; 
+  name: string;
 };
 
 type SessionContextType = {
@@ -31,6 +31,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         if (!res.ok) throw new Error();
 
         const data = await res.json();
+
         setUser(data.user);
       } catch {
         setUser(null);
