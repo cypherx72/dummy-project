@@ -5,10 +5,8 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { WeekCalendar } from "@/app/dashboard/tasks/week-calendar";
 import { useSession } from "@/context/session-context";
 import { format } from "date-fns";
-import CalendarEvents from "@/app/dashboard/tasks/calendar-events";
 
 function getGreeting(name: string) {
   const hour = new Date().getHours();

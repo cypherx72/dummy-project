@@ -317,6 +317,77 @@ type Assignment {
   submissions: [Submission!]!
 }
 
+
+type EnrolledCourse {
+  id: ID!
+  name: String!
+  code: String!
+  description: String
+  createdAt: String!
+  teacher: User
+}
+
+type GetUpcomingEventsResponse {
+  status: Int!
+  message: String!
+  code: String!
+  events: [Event!]!
+}
+
+type GetNotificationsResponse {
+  status: Int!
+  message: String!
+  code: String!
+  notifications: [Notification!]!
+}
+
+type GetEnrolledCoursesResponse {
+  status: Int!
+  message: String!
+  code: String!
+  courses: [EnrolledCourse!]!
+}
+
+type Alarm {
+  id: ID!
+  title: String!
+  message: String!
+  type: String
+  isRead: Boolean!
+  createdAt: String!
+}
+
+type GetAlarmsResponse {
+  status: Int!
+  message: String!
+  code: String!
+  alarms: [Alarm!]!
+}
+
+type Email {
+  id: ID!
+  subject: String!
+  senderName: String!
+  senderEmail: String!
+  preview: String
+  isRead: Boolean!
+  createdAt: String!
+}
+
+type GetRecentEmailsResponse {
+  status: Int!
+  message: String!
+  code: String!
+  emails: [Email!]!
+}
+
+type SearchAssignmentsResponse {
+  status: Int!
+  message: String!
+  code: String!
+  assignments: [Assignment!]!
+}
+
 type Notification {
   id: ID!
   userId: ID!
@@ -496,6 +567,14 @@ type Query {
   chatMessages(input: chatMessagesInput! ): ChatMessagesResponse!
   GetDashboardData: DashboardResponse!
   GetAssignments: GetAssignmentsResponse!
+
+ 
+  GetUpcomingEvents: GetUpcomingEventsResponse!
+  GetNotifications: GetNotificationsResponse!
+  GetEnrolledCourses: GetEnrolledCoursesResponse!
+  GetAlarms: GetAlarmsResponse!
+  GetRecentEmails: GetRecentEmailsResponse!
+  SearchAssignments(query: String!): SearchAssignmentsResponse!
 
   # Enrollment queries
   GetDepartments: GetDepartmentsResponse!

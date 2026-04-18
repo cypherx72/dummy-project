@@ -3,7 +3,7 @@
 import { useContext, createContext } from "react";
 import { TaskUIContextType } from "@/app/assignments/_utils/taskTypes";
 
-export const AssignmentUIContext = createContext<undefined | AssignmentUIContextType>(
+export const AssignmentUIContext = createContext<undefined | TaskUIContextType>(
   undefined,
 );
 
@@ -15,7 +15,6 @@ export const useAssignmentUI = () => {
   }
   return ctx;
 };
-
 
 export const TaskUIContext = AssignmentUIContext;
 export const useTaskUI = useAssignmentUI;

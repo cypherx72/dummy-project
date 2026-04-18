@@ -9,7 +9,6 @@ export async function GetNotifications(_: any, __: any, context: contextType) {
 
   try {
     const notifications = await prisma.notification.findMany({
-      where: { userId: user.id },
       orderBy: { createdAt: "desc" },
       take: 10,
     });

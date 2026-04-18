@@ -15,34 +15,21 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ClipboardList,
-  BookOpen,
   Clock3,
   CheckCircle2,
   Star,
-  AlertTriangle,
   XCircle,
   CalendarDays,
   ArrowRight,
-  Bell,
-  Trophy,
 } from "lucide-react";
-import {
-  format,
-  isPast,
-  isToday,
-  formatDistanceToNow,
-  differenceInDays,
-} from "date-fns";
-import { cn } from "@/lib/utils";
+import { isPast, isToday } from "date-fns";
 import UserCard from "../_components/userCard";
 import NavBar from "../_components/navBar";
 import NotificationsCard from "@/app/dashboard/assignments/notifications-card";
-import AICard from "@/app/dashboard/assignments/ai-card";
 
 type AssignmentStatus = "pending" | "submitted" | "graded" | "late" | "missed";
 
@@ -62,22 +49,34 @@ export default function StudentAssignmentsPage() {
   const router = useRouter();
 
   const {
-    fetchDashboardData,
     fetchAssignments,
-    dashboardData,
-    dashboardLoading,
+    fetchNotifications,
     fetchAssignmentsData,
+    fetchEnrolledCourses,
+    fetchRecentEmails,
+    fetchUpcomingEvents,
+    fetchAlarms,
     fetchAssignmentsLoading,
   } = useAssignmentUI();
 
   useEffect(() => {
-    fetchDashboardData();
     fetchAssignments();
-  }, [fetchDashboardData, fetchAssignments]);
+    fetchNotifications();
+    fetchEnrolledCourses();
+    fetchRecentEmails();
+    fetchAlarms();
+    fetchUpcomingEvents();
+  }, [
+    fetchAssignments,
+    fetchNotifications,
+    fetchUpcomingEvents,
+    fetchAlarms,
 
-  const assignments = fetchAssignmentsData?.GetAssignments?.assignments ?? [];
-  const courses = dashboardData?.GetDashboardData?.courses ?? [];
-  const notifications = dashboardData?.GetDashboardData?.notifications ?? [];
+    fetchEnrolledCourses,
+    fetchRecentEmails,
+  ]);
+
+  const assignments = fetchAssignmentsData.GetAssignments.assignments;
 
   const pending = assignments.filter((a: any) => {
     const s = getStatus(a);
@@ -94,23 +93,25 @@ export default function StudentAssignmentsPage() {
   ).length;
 
   // Upcoming: pending assignments sorted by due date
-  const upcoming = [...assignments]
-    .filter((a: any) => {
-      const s = getStatus(a);
-      return s === "pending" || s === "late";
-    })
-    .sort(
-      (a: any, b: any) =>
-        parseMs(a.dueDate).getTime() - parseMs(b.dueDate).getTime(),
-    )
-    .slice(0, 5);
+
+  // const upcoming = [...assignments]
+  //   .filter((a: any) => {
+  //     const s = getStatus(a);
+  //     return s === "pending" || s === "late";
+  //   })
+  //   .sort(
+  //     (a: any, b: any) =>
+  //       parseMs(a.dueDate).getTime() - parseMs(b.dueDate).getTime(),
+  //   )
+  //   .slice(0, 5);
 
   // Recent grades
-  const recentGrades = assignments
-    .filter((a: any) => getStatus(a) === "graded")
-    .slice(0, 3);
 
-  const loading = dashboardLoading || fetchAssignmentsLoading;
+  // const recentGrades = assignments
+  //   .filter((a: any) => getStatus(a) === "graded")
+  //   .slice(0, 3);
+
+  const loading = fetchAssignmentsLoading;
 
   return (
     <main className="space-y-6 p-6 font-sans">
@@ -181,8 +182,8 @@ export default function StudentAssignmentsPage() {
       {/* Main grid */}
       <div className="flex flex-col gap-4">
         {/* Upcoming assignments (2/3) */}
-        <div className="flex flex-row items-start gap-3 rounded-2xl overflow-hidden">
-          <div className="flex flex-row flex-1 gap-4 p-2 py-4 border-1 rounded-2xl h-full">
+        <div className="flex flex-row items-start gap-3 rounded-2xl h-[40lvh] overflow-hidden">
+          <div className="flex flex-row flex-1 gap-4 p-2 py-4 border-1 rounded-2xl">
             <AssignmentsCard />
           </div>
           <NotificationsCard />

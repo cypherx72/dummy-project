@@ -192,3 +192,60 @@
 [data-slot="progress-indicator"] {
   background-color: var(--progress-indicator-color) !important;
 }
+
+.notification-card {
+  background:
+    radial-gradient(at 51% 42%, #000000 0px, transparent 50%),
+    radial-gradient(
+      at 22.190622124135785% 27.296838091026785%,
+      #0f1e3a 0px,
+      transparent 50%
+    ),
+    radial-gradient(
+      at 86.55939782658987% 18.685312335324305%,
+      #07080a 0px,
+      transparent 50%
+    ),
+    radial-gradient(
+      at 18.311253945639667% 81.74390415933927%,
+      #0d0f1b 0px,
+      transparent 50%
+    ),
+    radial-gradient(
+      at 72.33504783877078% 81.46611300592951%,
+      #000000 0px,
+      transparent 50%
+    ),
+    #09203f;
+}
+
+/* Thin scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Thumb */
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.5); /* slate-500 */
+  border-radius: 9999px;
+}
+
+/* Hover */
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.8);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, 0.5) transparent;
+}
+
+.scrollbar::-webkit-scrollbar {
+  width: 6px;
+}

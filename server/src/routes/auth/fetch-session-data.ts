@@ -26,8 +26,6 @@ export const fetchSession = async (req: Request, res: Response) => {
       return GENERIC_UNAUTH();
     }
 
-    console.log(decoded);
-
     if (!decoded) {
       return GENERIC_UNAUTH();
     }

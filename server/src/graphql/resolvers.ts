@@ -42,6 +42,14 @@ import { GetAnnouncements } from "./communication/getAnnouncements.js";
 import { ScheduleMeeting } from "./communication/scheduleMeeting.js";
 import { GetMeetings } from "./communication/getMeetings.js";
 
+// ADD imports (after existing task imports):
+import { GetUpcomingEvents } from "./tasks/getUpcomingEvents.js";
+import { GetNotifications } from "./tasks/getNotifications.js";
+import { GetEnrolledCourses } from "./tasks/getEnrolledCourses.js";
+import { GetAlarms } from "./tasks/getAlarm.js";
+import { GetRecentEmails } from "./tasks/getRecentEmails.js";
+import { SearchAssignments } from "./tasks/searchAssignments.js";
+
 export const resolvers = {
   Date: dateScalar,
   Query: {
@@ -50,6 +58,14 @@ export const resolvers = {
     GetAssignments,
     GetDashboardData,
     chatSummary,
+
+    // ADD to Query resolver map:
+    GetUpcomingEvents,
+    GetNotifications,
+    GetEnrolledCourses,
+    GetAlarms,
+    GetRecentEmails,
+    SearchAssignments,
 
     // Enrollment
     GetDepartments,
