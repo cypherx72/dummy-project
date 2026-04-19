@@ -1,5 +1,53 @@
 import { gql } from "@apollo/client";
 
+export const FETCH_TEACHING_COURSES = gql`
+  query GetTeachingCourses {
+    GetTeachingCourses {
+      status
+      message
+      code
+      courses {
+        id
+        name
+        code
+        description
+        createdAt
+      }
+    }
+  }
+`;
+
+export const FETCH_TEACHER_ASSIGNMENTS = gql`
+  query GetTeacherAssignments {
+    GetTeacherAssignments {
+      status
+      message
+      code
+      assignments {
+        id
+        title
+        description
+        dueDate
+        maxMarks
+        submissionType
+        priority
+        postedDate
+        updatedAt
+        course {
+          id
+          name
+        }
+        submissions {
+          id
+          status
+          submittedAt
+          marksObtained
+        }
+      }
+    }
+  }
+`;
+
 export const FETCH_DASHBOARD_DATA = gql`
   query GetDashboardData {
     GetDashboardData {

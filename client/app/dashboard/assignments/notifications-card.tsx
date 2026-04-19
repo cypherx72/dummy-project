@@ -96,7 +96,7 @@ export default function NotificationsCard() {
         Notification Center
       </h3>
 
-      <div className="flex flex-col gap-2 w-full h-full overflow-hidden overflow-y-auto no-scrollbar">
+      <div className="flex flex-col gap-2 w-full h-full overflow-hidden overflow-y-auto">
         {notificationsLoading && <NotificationSkeleton />}
 
         {!notificationsLoading && notificationsError && (

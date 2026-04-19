@@ -192,7 +192,7 @@ export default function StudentAssignmentsPage() {
       </div>
 
       {/* Right column */}
-      <div className="flex flex-row gap-4 space-y-4 w-full h-[45lvh] overflow-hidden">
+      <div className="flex flex-row gap-4 space-y-4 w-full h-[50lvh] overflow-hidden">
         {/* Notifications */}
         <div className="flex flex-1 p-4 border-1 rounded-2xl h-full overflow-hidden">
           <CourseCard />
@@ -222,6 +222,11 @@ export default function StudentAssignmentsPage() {
               {
                 label: "Progress Report",
                 href: "/dashboard/progress-report",
+                icon: Star,
+              },
+              {
+                label: "View Assignments",
+                href: "/dashboard/assignments",
                 icon: Star,
               },
             ].map((item) => (

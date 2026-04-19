@@ -8,6 +8,8 @@ import {
   FETCH_ALARMS,
   FETCH_RECENT_EMAILS,
   SEARCH_ASSIGNMENTS,
+  FETCH_TEACHING_COURSES,
+  FETCH_TEACHER_ASSIGNMENTS,
 } from "@/app/assignments/_queries/taskQueries";
 import { useEffect, useMemo } from "react";
 import { errorToast } from "@/components/ui/toast";
@@ -87,6 +89,26 @@ export const useTaskQueries = ({}: TaskQueriesArgs) => {
     },
   ] = useLazyQuery(SEARCH_ASSIGNMENTS);
 
+  // ── Teacher-specific ──────────────────────────────────────────────────────
+  const [
+    fetchTeachingCourses,
+    {
+      data: teachingCoursesData,
+      loading: teachingCoursesLoading,
+      error: teachingCoursesError,
+    },
+  ] = useLazyQuery(FETCH_TEACHING_COURSES);
+
+  const [
+    fetchTeacherAssignments,
+    {
+      data: teacherAssignmentsData,
+      loading: teacherAssignmentsLoading,
+      error: teacherAssignmentsError,
+    },
+  ] = useLazyQuery(FETCH_TEACHER_ASSIGNMENTS);
+  // ─────────────────────────────────────────────────────────────────────────
+
   const debouncedSearch = useMemo(
     () =>
       debounce((query: string) => {
@@ -130,8 +152,17 @@ export const useTaskQueries = ({}: TaskQueriesArgs) => {
   }, [recentEmailsError]);
 
   useEffect(() => {
-    console.group("📊 Data Update");
+    if (teachingCoursesError)
+      errorToast("Failed to load teaching courses. Please refresh.");
+  }, [teachingCoursesError]);
 
+  useEffect(() => {
+    if (teacherAssignmentsError)
+      errorToast("Failed to load teacher assignments. Please refresh.");
+  }, [teacherAssignmentsError]);
+
+  useEffect(() => {
+    console.group("📊 Data Update");
     if (dashboardData) console.log("Dashboard:", dashboardData);
     if (fetchAssignmentsData) console.log("Assignments:", fetchAssignmentsData);
     if (upcomingEventsData) console.log("Events:", upcomingEventsData);
@@ -140,7 +171,10 @@ export const useTaskQueries = ({}: TaskQueriesArgs) => {
     if (alarmsData) console.log("Alarms:", alarmsData);
     if (recentEmailsData) console.log("Emails:", recentEmailsData);
     if (searchAssignmentsData) console.log("Search:", searchAssignmentsData);
-
+    if (teachingCoursesData)
+      console.log("TeachingCourses:", teachingCoursesData);
+    if (teacherAssignmentsData)
+      console.log("TeacherAssignments:", teacherAssignmentsData);
     console.groupEnd();
   }, [
     dashboardData,
@@ -151,55 +185,60 @@ export const useTaskQueries = ({}: TaskQueriesArgs) => {
     alarmsData,
     recentEmailsData,
     searchAssignmentsData,
+    teachingCoursesData,
+    teacherAssignmentsData,
   ]);
 
   return {
-    // Dashboard
     fetchDashboardData,
     dashboardData,
     dashboardLoading,
     dashboardError,
 
-    // Assignments list
     fetchAssignments,
     fetchAssignmentsData,
     fetchAssignmentsLoading,
     fetchAssignmentsError,
 
-    // Upcoming events
     fetchUpcomingEvents,
     upcomingEventsData,
     upcomingEventsLoading,
     upcomingEventsError,
 
-    // Notifications
     fetchNotifications,
     notificationsData,
     notificationsLoading,
     notificationsError,
 
-    // Enrolled courses
     fetchEnrolledCourses,
     enrolledCoursesData,
     enrolledCoursesLoading,
     enrolledCoursesError,
 
-    // Alarms
     fetchAlarms,
     alarmsData,
     alarmsLoading,
     alarmsError,
 
-    // Recent emails
     fetchRecentEmails,
     recentEmailsData,
     recentEmailsLoading,
     recentEmailsError,
 
-    // Search (debounced)
     debouncedSearch,
     searchAssignmentsData,
     searchAssignmentsLoading,
     searchAssignmentsError,
+
+    // Teacher-specific
+    fetchTeachingCourses,
+    teachingCoursesData,
+    teachingCoursesLoading,
+    teachingCoursesError,
+
+    fetchTeacherAssignments,
+    teacherAssignmentsData,
+    teacherAssignmentsLoading,
+    teacherAssignmentsError,
   };
 };

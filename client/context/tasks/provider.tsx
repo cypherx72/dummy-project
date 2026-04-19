@@ -25,41 +25,42 @@ export const AssignmentProvider = ({
     dashboardData,
     dashboardLoading,
     dashboardError,
-
     fetchAssignments,
     fetchAssignmentsData,
     fetchAssignmentsLoading,
     fetchAssignmentsError,
-
     fetchUpcomingEvents,
     upcomingEventsData,
     upcomingEventsLoading,
     upcomingEventsError,
-
     fetchNotifications,
     notificationsData,
     notificationsLoading,
     notificationsError,
-
     fetchEnrolledCourses,
     enrolledCoursesData,
     enrolledCoursesLoading,
     enrolledCoursesError,
-
     fetchAlarms,
     alarmsData,
     alarmsLoading,
     alarmsError,
-
     fetchRecentEmails,
     recentEmailsData,
     recentEmailsLoading,
     recentEmailsError,
-
     debouncedSearch,
     searchAssignmentsData,
     searchAssignmentsLoading,
     searchAssignmentsError,
+    fetchTeachingCourses,
+    teachingCoursesData,
+    teachingCoursesLoading,
+    teachingCoursesError,
+    fetchTeacherAssignments,
+    teacherAssignmentsData,
+    teacherAssignmentsLoading,
+    teacherAssignmentsError,
   } = useTaskQueries({});
 
   const {
@@ -95,37 +96,30 @@ export const AssignmentProvider = ({
         dashboardData,
         dashboardLoading,
         dashboardError,
-
         fetchAssignments,
         fetchAssignmentsData,
         fetchAssignmentsLoading,
         fetchAssignmentsError,
-
         fetchUpcomingEvents,
         upcomingEventsData,
         upcomingEventsLoading,
         upcomingEventsError,
-
         fetchNotifications,
         notificationsData,
         notificationsLoading,
         notificationsError,
-
         fetchEnrolledCourses,
         enrolledCoursesData,
         enrolledCoursesLoading,
         enrolledCoursesError,
-
         fetchAlarms,
         alarmsData,
         alarmsLoading,
         alarmsError,
-
         fetchRecentEmails,
         recentEmailsData,
         recentEmailsLoading,
         recentEmailsError,
-
         debouncedSearch,
         searchAssignmentsData,
         searchAssignmentsLoading,
@@ -135,6 +129,15 @@ export const AssignmentProvider = ({
         submitAssignmentError,
         submitAssignmentLoading,
         submitAssignmentResponse,
+
+        fetchTeachingCourses,
+        teachingCoursesData,
+        teachingCoursesLoading,
+        teachingCoursesError,
+        fetchTeacherAssignments,
+        teacherAssignmentsData,
+        teacherAssignmentsLoading,
+        teacherAssignmentsError,
       }}
     >
       {children}
