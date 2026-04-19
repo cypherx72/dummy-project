@@ -1,4 +1,3 @@
-import { useLazyQuery } from "@apollo/client/react";
 import {
   FETCH_DASHBOARD_DATA,
   FETCH_ASSIGNMENTS_DATA,
@@ -10,7 +9,9 @@ import {
   SEARCH_ASSIGNMENTS,
   FETCH_TEACHING_COURSES,
   FETCH_TEACHER_ASSIGNMENTS,
+  FETCH_TEACHER_DASHBOARD_DATA,
 } from "@/app/assignments/_queries/taskQueries";
+import { useLazyQuery } from "@apollo/client/react";
 import { useEffect, useMemo } from "react";
 import { errorToast } from "@/components/ui/toast";
 
@@ -107,6 +108,15 @@ export const useTaskQueries = ({}: TaskQueriesArgs) => {
       error: teacherAssignmentsError,
     },
   ] = useLazyQuery(FETCH_TEACHER_ASSIGNMENTS);
+
+  const [
+    fetchTeacherDashboardData,
+    {
+      data: teacherDashboardData,
+      loading: teacherDashboardLoading,
+      error: teacherDashboardError,
+    },
+  ] = useLazyQuery(FETCH_TEACHER_DASHBOARD_DATA);
   // ─────────────────────────────────────────────────────────────────────────
 
   const debouncedSearch = useMemo(
@@ -162,32 +172,9 @@ export const useTaskQueries = ({}: TaskQueriesArgs) => {
   }, [teacherAssignmentsError]);
 
   useEffect(() => {
-    console.group("📊 Data Update");
-    if (dashboardData) console.log("Dashboard:", dashboardData);
-    if (fetchAssignmentsData) console.log("Assignments:", fetchAssignmentsData);
-    if (upcomingEventsData) console.log("Events:", upcomingEventsData);
-    if (notificationsData) console.log("Notifications:", notificationsData);
-    if (enrolledCoursesData) console.log("Courses:", enrolledCoursesData);
-    if (alarmsData) console.log("Alarms:", alarmsData);
-    if (recentEmailsData) console.log("Emails:", recentEmailsData);
-    if (searchAssignmentsData) console.log("Search:", searchAssignmentsData);
-    if (teachingCoursesData)
-      console.log("TeachingCourses:", teachingCoursesData);
-    if (teacherAssignmentsData)
-      console.log("TeacherAssignments:", teacherAssignmentsData);
-    console.groupEnd();
-  }, [
-    dashboardData,
-    fetchAssignmentsData,
-    upcomingEventsData,
-    notificationsData,
-    enrolledCoursesData,
-    alarmsData,
-    recentEmailsData,
-    searchAssignmentsData,
-    teachingCoursesData,
-    teacherAssignmentsData,
-  ]);
+    if (teacherDashboardError)
+      errorToast("Failed to load teacher dashboard. Please refresh.");
+  }, [teacherDashboardError]);
 
   return {
     fetchDashboardData,
@@ -240,5 +227,10 @@ export const useTaskQueries = ({}: TaskQueriesArgs) => {
     teacherAssignmentsData,
     teacherAssignmentsLoading,
     teacherAssignmentsError,
+
+    fetchTeacherDashboardData,
+    teacherDashboardData,
+    teacherDashboardLoading,
+    teacherDashboardError,
   };
 };

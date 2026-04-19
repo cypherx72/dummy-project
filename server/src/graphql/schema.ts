@@ -510,6 +510,48 @@ type EnrollmentRecord {
   user: EnrollmentUser!
 }
 
+type TeacherMetrics {
+  pending: Int!
+  submitted: Int!
+  graded: Int!
+  total: Int!
+}
+
+type TeacherDashboardResponse {
+  status: Int!
+  message: String!
+  code: String!
+  courses: [DashboardCourse!]!
+  assignments: [Assignment!]!
+  notifications: [Notification!]!
+  events: [Event!]!
+  metrics: TeacherMetrics!
+}
+
+type TeachingCourse {
+  id: ID!
+  name: String!
+  code: String!
+  description: String
+  createdAt: String!
+  enrolledCount: Int!
+  assignmentCount: Int!
+}
+
+type GetTeachingCoursesResponse {
+  status: Int!
+  message: String!
+  code: String!
+  courses: [TeachingCourse!]!
+}
+
+type GetTeacherAssignmentsResponse {
+  status: Int!
+  message: String!
+  code: String!
+  assignments: [Assignment!]!
+}
+
 input EnrollStudentInput {
   courseId: String!
   # Optional: admins/teachers can enroll another user by id.
@@ -581,6 +623,11 @@ type Query {
   GetCourseById(id: ID!): GetCourseResponse!
   GetTeacherCourses: GetTeacherCoursesResponse!
   GetEnrolledStudents(courseId: ID!): GetEnrolledStudentsResponse!
+
+
+  GetTeacherAssignments: GetTeacherAssignmentsResponse!
+GetTeachingCourses: GetTeachingCoursesResponse!
+GetTeacherDashboardData: TeacherDashboardResponse!
 
   # Attendance
   GetCourseAttendance(courseId: ID!, date: String): GetCourseAttendanceResponse!

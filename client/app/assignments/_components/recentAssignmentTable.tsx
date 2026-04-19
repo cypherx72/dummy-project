@@ -110,7 +110,8 @@ export function RecentAssignmentsTable({
     children: React.ReactNode;
   }) {
     return (
-      <button
+      <Button
+        variant="ghost"
         onClick={() => toggleSort(col)}
         className="flex items-center gap-1 hover:text-foreground transition-colors"
       >
@@ -121,7 +122,7 @@ export function RecentAssignmentsTable({
             sortKey === col ? "text-foreground" : "text-muted-foreground/50",
           )}
         />
-      </button>
+      </Button>
     );
   }
 

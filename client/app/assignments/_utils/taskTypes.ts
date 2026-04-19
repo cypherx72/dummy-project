@@ -71,6 +71,11 @@ export type TaskUIContextType = {
   teacherAssignmentsData: unknown;
   teacherAssignmentsLoading: boolean;
   teacherAssignmentsError: unknown;
+
+  fetchTeacherDashboardData: unknown;
+  teacherDashboardData: unknown;
+  teacherDashboardLoading: boolean;
+  teacherDashboardError: unknown;
 };
 
 export type AssignmentUIContextType = TaskUIContextType;

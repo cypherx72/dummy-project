@@ -50,6 +50,11 @@ import { GetAlarms } from "./tasks/getAlarm.js";
 import { GetRecentEmails } from "./tasks/getRecentEmails.js";
 import { SearchAssignments } from "./tasks/searchAssignments.js";
 
+// Add after existing task imports:
+import { GetTeacherAssignments } from "./tasks/getTeacherAssignments.js";
+import { GetTeachingCourses } from "./tasks/getTeachingCourses.js";
+import { GetTeacherDashboardData } from "./tasks/getTeacherDashboardData.js";
+
 export const resolvers = {
   Date: dateScalar,
   Query: {
@@ -66,6 +71,11 @@ export const resolvers = {
     GetAlarms,
     GetRecentEmails,
     SearchAssignments,
+
+    // Add inside Query resolver map:
+    GetTeacherAssignments,
+    GetTeachingCourses,
+    GetTeacherDashboardData,
 
     // Enrollment
     GetDepartments,

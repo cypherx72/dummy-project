@@ -60,6 +60,7 @@ isActive Boolean @default(false)
 role userRole @default(student)
 
 accounts Account[]
+emails Email[]
 sessions Session[]
 tokens Token[]
 sender Sender?
@@ -445,9 +446,14 @@ user User @relation(fields: [userId], references: [id])
 }
 
 enum NotificationType {
-assignment
-course
-system
+  assignment
+  course
+  system
+  agent
+  announcement
+  meeting
+  grade
+  attendance
 }
 
 model Enrollment {
@@ -489,6 +495,25 @@ model Submission {
   attachments Media[]
 
   @@map("submissions")
+}
+
+
+// ─── Emails ──────────────────────────────────────────────────────────────────
+
+model Email {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  subject     String
+  senderName  String   @map("sender_name")
+  senderEmail String   @map("sender_email")
+  preview     String?
+  body        String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("emails")
 }
 
 model Assignment {

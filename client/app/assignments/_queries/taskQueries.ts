@@ -48,6 +48,56 @@ export const FETCH_TEACHER_ASSIGNMENTS = gql`
   }
 `;
 
+export const FETCH_TEACHER_DASHBOARD_DATA = gql`
+  query GetTeacherDashboardData {
+    GetTeacherDashboardData {
+      status
+      message
+      code
+      courses {
+        id
+        name
+        code
+        createdAt
+      }
+      assignments {
+        id
+        title
+        dueDate
+        course {
+          id
+          name
+        }
+        submissions {
+          id
+          status
+        }
+      }
+      notifications {
+        id
+        title
+        message
+        type
+        isRead
+        createdAt
+      }
+      events {
+        id
+        title
+        location
+        startDate
+        startTime
+      }
+      metrics {
+        pending
+        submitted
+        graded
+        total
+      }
+    }
+  }
+`;
+
 export const FETCH_DASHBOARD_DATA = gql`
   query GetDashboardData {
     GetDashboardData {

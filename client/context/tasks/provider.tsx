@@ -61,6 +61,10 @@ export const AssignmentProvider = ({
     teacherAssignmentsData,
     teacherAssignmentsLoading,
     teacherAssignmentsError,
+    fetchTeacherDashboardData,
+    teacherDashboardData,
+    teacherDashboardLoading,
+    teacherDashboardError,
   } = useTaskQueries({});
 
   const {
@@ -138,6 +142,11 @@ export const AssignmentProvider = ({
         teacherAssignmentsData,
         teacherAssignmentsLoading,
         teacherAssignmentsError,
+
+        fetchTeacherDashboardData,
+        teacherDashboardData,
+        teacherDashboardLoading,
+        teacherDashboardError,
       }}
     >
       {children}

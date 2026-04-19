@@ -23,7 +23,7 @@ function getProgressColor(value: number): string {
   return `rgb(${red}, ${green}, 60)`;
 }
 
-function AssignmentProgress({ value = 78 }: { value?: number }) {
+export function AssignmentProgress({ value = 78 }: { value?: number }) {
   const color = getProgressColor(value);
   return (
     <Field className="gap-0.5 w-full max-w-sm">
@@ -31,7 +31,7 @@ function AssignmentProgress({ value = 78 }: { value?: number }) {
         <span className="font-light">Syllabus progress</span>
         <span
           className="ml-auto transition-colors duration-500"
-          style={{ color }}
+          // style={{ color }}
         >
           {value}%
         </span>
@@ -46,7 +46,7 @@ function AssignmentProgress({ value = 78 }: { value?: number }) {
   );
 }
 
-function CourseCardItem({ course }: { course: any }) {
+export function CourseCardItem({ course }: { course: any }) {
   return (
     <div className="relative border-0 rounded-2xl w-full h-full">
       <div className="z-0 absolute inset-0 rounded-2xl dark-horizon-glow" />

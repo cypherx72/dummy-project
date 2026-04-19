@@ -3,123 +3,86 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAssignmentUI } from "@/context/tasks/task-context";
-import AssignmentsCard from "@/app/dashboard/assignments/assignment-card";
 import { StatCard } from "../_components/statsCard";
-import CourseCard from "@/app/dashboard/tasks/course-card";
 import CalendarEvents from "@/app/dashboard/assignments/calendar-events";
 import { WeekCalendar } from "@/app/dashboard/assignments/week-calendar";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import NotificationsCard from "@/app/dashboard/assignments/notifications-card";
+import UserCard from "../_components/userCard";
+import NavBar from "../_components/navBar";
 
+import { RecentAssignmentsTable } from "../_components/recentAssignmentTable";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ClipboardList,
   Clock3,
   CheckCircle2,
   Star,
-  XCircle,
   CalendarDays,
   ArrowRight,
+  Plus,
+  CalendarPlus,
 } from "lucide-react";
-import { isPast, isToday } from "date-fns";
-import UserCard from "../_components/userCard";
-import NavBar from "../_components/navBar";
-import NotificationsCard from "@/app/dashboard/assignments/notifications-card";
 import { Button } from "@/components/ui/button";
 import { AssignmentsTable } from "../_components/assignmentTable";
 
-type AssignmentStatus = "pending" | "submitted" | "graded" | "late" | "missed";
-
-function parseMs(raw: string): Date {
-  const n = Number(raw);
-  return isNaN(n) ? new Date(raw) : new Date(n);
-}
-
-function getStatus(a: any): AssignmentStatus {
-  const sub = a.submissions?.[0];
-  if (sub) return sub.status;
-  const due = parseMs(a.dueDate);
-  return isPast(due) && !isToday(due) ? "missed" : "pending";
-}
-
-export default function StudentAssignmentsPage() {
+export default function TeacherDashboardPage() {
   const router = useRouter();
-  const [assignments, setAssignments] = useState([]);
+  const [assignments, setAssignments] = useState<any[]>([]);
 
   const {
-    fetchAssignments,
+    fetchTeacherAssignments,
+    teacherAssignmentsData,
+    teacherAssignmentsLoading,
     fetchNotifications,
-    fetchAssignmentsData,
-    fetchEnrolledCourses,
-    fetchRecentEmails,
     fetchUpcomingEvents,
     fetchAlarms,
-    fetchAssignmentsLoading,
+    fetchRecentEmails,
+    fetchTeachingCourses,
   } = useAssignmentUI();
 
   useEffect(() => {
-    fetchAssignments();
+    fetchTeacherAssignments();
     fetchNotifications();
-    fetchEnrolledCourses();
-    fetchRecentEmails();
-    fetchAlarms();
     fetchUpcomingEvents();
+    fetchAlarms();
+    fetchRecentEmails();
+    fetchTeachingCourses();
   }, [
-    fetchAssignments,
+    fetchTeacherAssignments,
     fetchNotifications,
     fetchUpcomingEvents,
     fetchAlarms,
-
-    fetchEnrolledCourses,
     fetchRecentEmails,
+    fetchTeachingCourses,
   ]);
 
   useEffect(() => {
-    if (fetchAssignmentsData?.GetAssignments) {
-      const assignments = fetchAssignmentsData.GetAssignments.assignments;
-      setAssignments(assignments);
+    if (teacherAssignmentsData?.GetTeacherAssignments) {
+      setAssignments(
+        teacherAssignmentsData.GetTeacherAssignments.assignments ?? [],
+      );
     }
-  }, [fetchAssignmentsData]);
+  }, [teacherAssignmentsData]);
 
-  const pending = assignments.filter((a: any) => {
-    const s = getStatus(a);
-    return s === "pending" || s === "late";
-  }).length;
-  const submitted = assignments.filter(
-    (a: any) => getStatus(a) === "submitted",
+  const pending = assignments.filter(
+    (a) => (a.submissions?.length ?? 0) === 0,
   ).length;
-  const graded = assignments.filter(
-    (a: any) => getStatus(a) === "graded",
-  ).length;
-  const missed = assignments.filter(
-    (a: any) => getStatus(a) === "missed",
-  ).length;
+  const submitted = assignments.reduce(
+    (acc: number, a: any) =>
+      acc +
+      (a.submissions?.filter((s: any) => s.status === "submitted").length ?? 0),
+    0,
+  );
+  const graded = assignments.reduce(
+    (acc: number, a: any) =>
+      acc +
+      (a.submissions?.filter((s: any) => s.status === "graded").length ?? 0),
+    0,
+  );
+  const total = assignments.length;
 
-  // Upcoming: pending assignments sorted by due date
-
-  // const upcoming = [...assignments]
-  //   .filter((a: any) => {
-  //     const s = getStatus(a);
-  //     return s === "pending" || s === "late";
-  //   })
-  //   .sort(
-  //     (a: any, b: any) =>
-  //       parseMs(a.dueDate).getTime() - parseMs(b.dueDate).getTime(),
-  //   )
-  //   .slice(0, 5);
-
-  // Recent grades
-
-  // const recentGrades = assignments
-  //   .filter((a: any) => getStatus(a) === "graded")
-  //   .slice(0, 3);
-
-  const loading = fetchAssignmentsLoading;
+  const loading = teacherAssignmentsLoading;
 
   return (
     <main className="space-y-6 p-6 font-sans">
@@ -128,7 +91,6 @@ export default function StudentAssignmentsPage() {
       <div className="flex gap-4 w-full h-[35lvh]">
         <div className="flex flex-col flex-1 gap-4 h-full">
           <UserCard />
-          {/* Stats */}
           <div className="gap-4 grid grid-cols-2 lg:grid-cols-4 h-full">
             {loading ? (
               Array.from({ length: 4 }).map((_, i) => (
@@ -149,7 +111,7 @@ export default function StudentAssignmentsPage() {
                   value={pending}
                   color="text-amber-600 dark:text-amber-400"
                   onClick={() =>
-                    router.push("/assignments/@student/assignments-and-quizzes")
+                    router.push("/assignments/@teacher/assignments-and-quizzes")
                   }
                 />
                 <StatCard
@@ -170,11 +132,11 @@ export default function StudentAssignmentsPage() {
                 />
                 <StatCard
                   icon={
-                    <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                    <ClipboardList className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                   }
-                  label="Missed"
-                  value={missed}
-                  color="text-red-600 dark:text-red-400"
+                  label="Total"
+                  value={total}
+                  color="text-violet-600 dark:text-violet-400"
                 />
               </>
             )}
@@ -187,18 +149,25 @@ export default function StudentAssignmentsPage() {
         </section>
       </div>
 
-      <div className="flex flex-row justify-start items-start gap-4 h-[45lvh] overflow-hidden">
-        <AssignmentsTable />
+      {/* Recent Assignments Table + Notifications */}
+      {/* Recent Assignments Table + Notifications */}
+      <div className="flex flex-row items-start gap-4 h-[45lvh] overflow-hidden">
+        <div className="flex flex-col flex-1 gap-3 min-w-0 h-full overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <AssignmentsTable assignments={assignments} loading={loading} />
+          </div>
+        </div>
         <NotificationsCard />
       </div>
 
-      {/* Right column */}
-      <div className="flex flex-row gap-4 space-y-4 w-full h-[50lvh] overflow-hidden">
-        {/* Notifications */}
+      {/* Bottom row */}
+      <div className="flex flex-row gap-4 w-full h-[50lvh] overflow-hidden">
         <div className="flex flex-1 p-4 border-1 rounded-2xl h-full overflow-hidden">
-          <CourseCard />
+          {/* Reuse CourseCard — shows teacher's courses via GetTeachingCourses */}
+          {/* Import the teacher variant or the shared one based on your CourseCard impl */}
+          <TeacherCourseShell />
         </div>
-        {/* Quick links */}
+
         <Card className="w-[28%] h-full">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Quick Access</CardTitle>
@@ -206,47 +175,93 @@ export default function StudentAssignmentsPage() {
           <CardContent className="space-y-3 p-4 pt-0">
             {[
               {
+                label: "Create Assignment",
+                href: "/assignments/create-assignment",
+                icon: Plus,
+                primary: true,
+              },
+              {
+                label: "Create Event",
+                href: "/dashboard/events/create",
+                icon: CalendarPlus,
+                primary: true,
+              },
+              {
                 label: "Assignments & Quizzes",
-                href: "/assignments/@student/assignments-and-quizzes",
+                href: "/assignments/@teacher/assignments-and-quizzes",
                 icon: ClipboardList,
+                primary: false,
               },
               {
                 label: "Class Schedule",
-                href: "/assignments/@student/class-schedule",
+                href: "/assignments/@teacher/class-schedule",
                 icon: CalendarDays,
+                primary: false,
               },
               {
                 label: "Attendance",
-                href: "/assignments/@student/attendance",
+                href: "/assignments/@teacher/attendance",
                 icon: CheckCircle2,
-              },
-              {
-                label: "Progress Report",
-                href: "/dashboard/progress-report",
-                icon: Star,
-              },
-              {
-                label: "Create Assingment",
-                href: "/dashboard/create-assignment",
-                icon: Star,
+                primary: false,
               },
             ].map((item) => (
               <Button
-                variant="secondary"
+                variant={item.primary ? "default" : "secondary"}
                 key={item.href}
                 onClick={() => router.push(item.href)}
-                className="flex justify-between items-center hover:bg-muted/40 px-3 py-3 rounded-lg w-full transition-colors"
+                className="flex justify-between items-center px-3 py-3 rounded-lg w-full transition-colors"
               >
                 <div className="flex items-center gap-2.5">
-                  <item.icon className="w-4 h-4 text-muted-foreground" />
+                  <item.icon className="w-4 h-4" />
                   <span className="text-sm">{item.label}</span>
                 </div>
-                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
+                <ArrowRight className="opacity-60 w-3.5 h-3.5" />
               </Button>
             ))}
           </CardContent>
         </Card>
       </div>
     </main>
+  );
+}
+
+// ── Inline shell — uses fetchTeachingCourses data already in context ──────────
+function TeacherCourseShell() {
+  const { teachingCoursesData, teachingCoursesLoading } = useAssignmentUI();
+  const courses: any[] = teachingCoursesData?.GetTeachingCourses?.courses ?? [];
+
+  if (teachingCoursesLoading) {
+    return (
+      <div className="space-y-3 w-full">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="rounded-xl w-full h-14" />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2 w-full overflow-auto">
+      <p className="mb-3 font-semibold text-base">My Courses</p>
+      {courses.length === 0 ? (
+        <p className="text-muted-foreground text-sm">No courses yet.</p>
+      ) : (
+        courses.map((c: any) => (
+          <div
+            key={c.id}
+            className="flex justify-between items-center bg-muted/30 hover:bg-muted/50 px-4 py-3 rounded-xl transition-colors cursor-default"
+          >
+            <div>
+              <p className="font-medium text-sm">{c.name}</p>
+              <p className="text-muted-foreground text-xs">{c.code}</p>
+            </div>
+            <div className="text-muted-foreground text-xs text-right">
+              <p>{c.enrolledCount ?? 0} students</p>
+              <p>{c.assignmentCount ?? 0} assignments</p>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
   );
 }

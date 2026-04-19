@@ -1,76 +1,45 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { columns, Payment } from "./columns";
+import { useEffect, useMemo } from "react";
+import { teacherAssignmentColumns, TeacherAssignment } from "./teacherColumns";
 import { DataTable } from "./dataTable";
+import { Skeleton } from "@/components/ui/skeleton";
 
-async function getData(): Promise<Payment[]> {
-  // Replace with your actual API call, e.g. fetch from your GraphQL/Prisma backend
-  return [
-    {
-      id: "728ed52f",
-      amount: 316,
-      status: "success",
-      email: "ken99@example.com",
-    },
-    {
-      id: "728ed52f",
-      amount: 316,
-      status: "success",
-      email: "ken99@example.com",
-    },
-    {
-      id: "728ed52f",
-      amount: 316,
-      status: "success",
-      email: "ken99@example.com",
-    },
-    {
-      id: "728ed52f",
-      amount: 316,
-      status: "success",
-      email: "ken99@example.com",
-    },
-    {
-      id: "489e1d42",
-      amount: 242,
-      status: "success",
-      email: "abe45@example.com",
-    },
-    {
-      id: "a1b2c3d4",
-      amount: 837,
-      status: "processing",
-      email: "monserrat44@example.com",
-    },
-    {
-      id: "e5f6g7h8",
-      amount: 874,
-      status: "success",
-      email: "silas22@example.com",
-    },
-    {
-      id: "i9j0k1l2",
-      amount: 721,
-      status: "failed",
-      email: "carmella@example.com",
-    },
-  ];
+interface AssignmentsTableProps {
+  assignments: any[];
+  loading: boolean;
 }
 
-export function AssignmentsTable() {
-  const [data, setData] = useState([]);
-  useEffect(() => {
-    const fetchData = async () => {
-      const data = await getData();
-      setData(data);
-    };
-    fetchData();
-  }, []);
+export function AssignmentsTable({
+  assignments,
+  loading,
+}: AssignmentsTableProps) {
+  const data: TeacherAssignment[] = useMemo(
+    () =>
+      assignments.map((a) => ({
+        id: a.id,
+        title: a.title,
+        course: a.course?.name ?? "—",
+        dueDate: a.dueDate,
+        submissions: a.submissions?.length ?? 0,
+        priority: a.priority ?? "low",
+      })),
+    [assignments],
+  );
+
+  if (loading) {
+    return (
+      <div className="space-y-2 h-full">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="rounded-md w-full h-10" />
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <div className="flex-1 mx-auto min-w-0 h-full">
-      <DataTable columns={columns} data={data} />
+    <div className="h-full">
+      <DataTable columns={teacherAssignmentColumns} data={data} />
     </div>
   );
 }
