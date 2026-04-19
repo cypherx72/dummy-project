@@ -36,7 +36,7 @@ import {
   Trash2,
   Link,
 } from "lucide-react";
-
+// remove comment
 import { AssignmentFormValues, AssignmentSchema } from "@/config/ZodSchema";
 import { showToast } from "@/components/ui/toast";
 import { useAssignmentUI } from "@/context/tasks/task-context";
@@ -209,10 +209,16 @@ export default function AssignmentSubmitPage() {
       });
 
       if (response?.data?.SubmitAssignment?.status === 200) {
-        showToast("Assignment submitted!", "Your work has been submitted successfully.", "success");
+        showToast(
+          "Assignment submitted!",
+          "Your work has been submitted successfully.",
+          "success",
+        );
       } else {
         import("@/components/ui/toast").then(({ errorToast }) =>
-          errorToast(response?.data?.SubmitAssignment?.message ?? "Submission failed.")
+          errorToast(
+            response?.data?.SubmitAssignment?.message ?? "Submission failed.",
+          ),
         );
       }
     } catch (err) {
