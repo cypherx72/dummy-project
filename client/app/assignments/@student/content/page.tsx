@@ -115,7 +115,7 @@ export default function Page() {
               value={pending}
               color="text-amber-600 dark:text-amber-400"
               onClick={() =>
-                router.push("/assignments/@student/assignments-and-quizzes")
+                router.push("/assignments/student/assignments-and-quizzes")
               }
             />
             <StatCard

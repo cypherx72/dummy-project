@@ -18,7 +18,8 @@ export default function SignInPage() {
 
   const onSubmitHandler = async (credentials: FormValues) => {
     try {
-      const response = await fetch("http://localhost:4000/auth/credentials", {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const response = await fetch(`${API_URL}/auth/credentials`, {
         method: "POST",
         credentials: "include",
         headers: {

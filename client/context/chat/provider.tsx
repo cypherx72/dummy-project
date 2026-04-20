@@ -72,9 +72,7 @@ export default function ChatProvider({
     }
   }, [contextMenuMessage, activeChatId]);
 
-  useEffect(() => {
-    console.log("chatMsesage", chatMessages);
-  }, [chatMessages]);
+
 
   // load hooks
   const {

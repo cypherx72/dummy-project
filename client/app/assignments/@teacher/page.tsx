@@ -111,7 +111,7 @@ export default function TeacherDashboardPage() {
                   value={pending}
                   color="text-amber-600 dark:text-amber-400"
                   onClick={() =>
-                    router.push("/assignments/@teacher/assignments-and-quizzes")
+                    router.push("/assignments/teacher/assignments-and-quizzes")
                   }
                 />
                 <StatCard
@@ -188,19 +188,19 @@ export default function TeacherDashboardPage() {
               },
               {
                 label: "Assignments & Quizzes",
-                href: "/assignments/@teacher/assignments-and-quizzes",
+                href: "/assignments/teacher/assignments-and-quizzes",
                 icon: ClipboardList,
                 primary: false,
               },
               {
                 label: "Class Schedule",
-                href: "/assignments/@teacher/class-schedule",
+                href: "/assignments/teacher/class-schedule",
                 icon: CalendarDays,
                 primary: false,
               },
               {
                 label: "Attendance",
-                href: "/assignments/@teacher/attendance",
+                href: "/assignments/teacher/attendance",
                 icon: CheckCircle2,
                 primary: false,
               },

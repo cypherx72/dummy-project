@@ -11,7 +11,7 @@ import { getCookie } from "./get-session";
 
 export const createServerApolloClient = async (token?: string) => {
   const httpLink = new HttpLink({
-    uri: "http://localhost:4000/graphql",
+    uri: process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/graphql",
     fetch,
   });
 
@@ -30,7 +30,7 @@ export const createServerApolloClient = async (token?: string) => {
   });
 };
 
-let apolloClient: ApolloClient | null = null;
+let apolloClient: ApolloClient<unknown> | null = null;
 
 export async function getServerClient() {
   if (apolloClient) return apolloClient;

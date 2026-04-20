@@ -5,13 +5,13 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-provider = "prisma-client"
-output = "../generated/prisma"
-url = "postgresql://neondb_owner:npg_myLW8sNMDv1u@ep-odd-queen-adsik7u5.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
 }
 
 datasource db {
-provider = "postgresql"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // Authentication Models
@@ -671,7 +671,7 @@ model QuizQuestion {
   @@map("quiz_questions")
 }
 
-// ─── Remarks ─────────────────────────────────────────────────────────────────
+// ─── Remarks ───────────────��─────────────────────────────────────────────────
 
 model Remark {
   id          String   @id @default(cuid())

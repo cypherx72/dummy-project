@@ -148,7 +148,7 @@ export default function StudentAssignmentsPage() {
                   value={pending}
                   color="text-amber-600 dark:text-amber-400"
                   onClick={() =>
-                    router.push("/assignments/@student/assignments-and-quizzes")
+                    router.push("/assignments/student/assignments-and-quizzes")
                   }
                 />
                 <StatCard
@@ -206,17 +206,17 @@ export default function StudentAssignmentsPage() {
             {[
               {
                 label: "Assignments & Quizzes",
-                href: "/assignments/@student/assignments-and-quizzes",
+                href: "/assignments/student/assignments-and-quizzes",
                 icon: ClipboardList,
               },
               {
                 label: "Class Schedule",
-                href: "/assignments/@student/class-schedule",
+                href: "/assignments/student/class-schedule",
                 icon: CalendarDays,
               },
               {
                 label: "Attendance",
-                href: "/assignments/@student/attendance",
+                href: "/assignments/student/attendance",
                 icon: CheckCircle2,
               },
               {

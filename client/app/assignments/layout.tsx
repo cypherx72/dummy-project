@@ -31,7 +31,6 @@ export default function AssignmentsLayout({
 }) {
   const { user, loading } = useSession();
 
-  console.log(user);
   const content = loading ? (
     <SpinnerButton />
   ) : user?.role === "teacher" || user?.role === "admin" ? (

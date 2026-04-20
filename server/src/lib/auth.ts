@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { GraphQLCustomLError } from "./error.js";
 import { GraphQLError } from "graphql";
 
-const AUTH_SECRET = "pqe4Mqgah1FnwXoJAnxUCFMqTE1ybUMn5yJ+1jtyeWo=";
+const AUTH_SECRET = process.env.AUTH_SECRET!;
 
 export async function getSessionId(req: any) {
   const authHeader = req.headers.authorization || req.headers["authorization"];

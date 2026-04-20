@@ -6,7 +6,7 @@ export const connectSocket = () => {
   if (typeof window === "undefined") return null;
 
   if (!socket) {
-    socket = io("http://localhost:4000", {
+    socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000", {
       withCredentials: true,
       transports: ["websocket"],
     });

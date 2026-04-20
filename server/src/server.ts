@@ -47,7 +47,7 @@ await server.start();
 // Set up Socket.io server
 export const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:4000",
+    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
     methods: ["GET", "POST"],
     credentials: true,
     allowedHeaders: ["Content-Type"],
@@ -59,7 +59,7 @@ export const io = new Server(httpServer, {
 // and our expressMiddleware function.
 
 const corsOptions = {
-  origin: "http://localhost:3000",
+  origin: process.env.CORS_ORIGIN || "http://localhost:3000",
   credentials: true,
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -170,7 +170,8 @@ io.on("connection", async (socket) => {
 
 // Modified server startup
 
+const PORT = process.env.PORT || 4000;
 await new Promise<void>((resolve) =>
-  httpServer.listen({ port: 4000 }, resolve),
+  httpServer.listen({ port: PORT }, resolve),
 );
-console.log(`🚀 Server ready at http://localhost:4000/`);
+console.log(`🚀 Server ready at http://localhost:${PORT}/`);

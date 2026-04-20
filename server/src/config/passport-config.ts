@@ -100,7 +100,7 @@ passport.use(
 passport.use(
   new GoogleStrategy(
     {
-      callbackURL: "http://localhost:4000/auth/google/redirect",
+      callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:4000/auth/google/redirect",
       clientID: GOOGLE_CLIENT_ID!,
       clientSecret: GOOGLE_CLIENT_SECRET!,
       passReqToCallback: true,

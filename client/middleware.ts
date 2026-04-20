@@ -32,10 +32,10 @@ export async function middleware(request: NextRequest) {
     });
 
     if (!res.ok) {
-      GENERIC_ERR();
+      return GENERIC_ERR();
     }
   } catch {
-    GENERIC_ERR();
+    return GENERIC_ERR();
   }
 
   return NextResponse.next();
